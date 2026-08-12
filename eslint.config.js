@@ -10,21 +10,21 @@ export default tseslint.config(
     ignores: ["**/node_modules/**", "**/dist/**"],
   },
 
-  // Base rules for every TS file in the monorepo (frontend, backend, common)
+  // Base rules for every TS file in the monorepo (client, server, shared)
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
-  // Backend: Node runtime globals (process, __dirname, etc.)
+  // Server: Node runtime globals (process, __dirname, etc.)
   {
-    files: ["backend/**/*.ts"],
+    files: ["server/**/*.ts"],
     languageOptions: {
       globals: globals.node,
     },
   },
 
-  // Frontend: browser globals + React/JSX/accessibility rules
+  // Client: browser globals + React/JSX/accessibility rules
   {
-    files: ["frontend/src/**/*.{ts,tsx}"],
+    files: ["client/src/**/*.{ts,tsx}"],
     languageOptions: {
       globals: globals.browser,
     },
