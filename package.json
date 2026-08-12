@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "workspaces": [
-    "frontend",
-    "backend",
-    "common"
+    "client",
+    "server",
+    "shared"
   ],
   "scripts": {
     "lint": "eslint ."

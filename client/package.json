@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@notes/common": "^1.0.0",
+    "@notes/shared": "^1.0.0",
     "@radix-ui/react-select": "^2.3.7",
     "@tailwindcss/vite": "^4.3.3",
     "class-variance-authority": "^0.7.1",
