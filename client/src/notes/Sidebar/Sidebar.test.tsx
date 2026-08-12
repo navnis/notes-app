@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./Sidebar";
 
-vi.mock("@/auth/authApi", () => ({
+vi.mock("@/api/auth", () => ({
   logoutRequest: vi.fn().mockResolvedValue(undefined),
 }));
 

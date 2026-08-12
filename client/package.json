@@ -13,6 +13,7 @@
     "@notes/shared": "^1.0.0",
     "@radix-ui/react-select": "^2.3.7",
     "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/react-query": "^5.101.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jotai": "^2.20.2",

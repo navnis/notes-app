@@ -1,5 +1,9 @@
 import { useState } from "react";
+import type { Tag as TagData } from "@notes/shared";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
+import { toast } from "@/components";
+import { useCreateNote } from "@/hooks/useNotes";
+import { ApiError } from "@/lib/api";
 
 const SAMPLE_TAGS = [
   { id: "1", name: "architecture", count: 1 },
@@ -12,51 +16,39 @@ const SAMPLE_TAGS = [
   { id: "8", name: "design", count: 1 },
 ];
 
-const INITIAL_NOTES = [
-  {
-    id: "1",
-    emoji: "🚀",
-    title: "Frontend Fundamentals & System Design",
-    preview:
-      "Frontend Architecture Guidelines When building modern web applications, state management and ...",
-    content:
-      "# Frontend Architecture Guidelines\n\nWhen building modern web applications, state management and data flow are paramount.\n\n- **Optimistic UI Updates**: Instantly reflect actions while syncing API calls.\n- **Debounced Input**: Prevent excessive search query requests.\n- **Accessibility**: Support keyboard shortcuts (`Ctrl+N`, `/`) and semantic HTML structure.",
-    tags: [SAMPLE_TAGS[0], SAMPLE_TAGS[1], SAMPLE_TAGS[2]],
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 20 * 60 * 1000),
-  },
-  {
-    id: "2",
-    emoji: "⚡",
-    title: "Backend API Spec & SQLite Schema",
-    preview: "REST API Endpoints Required | Method | Endpoint | Description | ... | GET | /notes | Support...",
-    content: "# REST API Endpoints\n\nRequired endpoints:\n\n- `GET /notes`\n- `POST /notes`\n- `DELETE /notes/:id`",
-    tags: [SAMPLE_TAGS[3], SAMPLE_TAGS[4], SAMPLE_TAGS[5]],
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-  },
-  {
-    id: "3",
-    emoji: "💡",
-    title: "Product Roadmap & UX Polish",
-    preview: "UX Roadmap Checklist [x] Responsive layout for mobile & desktop [x] Keyboard shortcuts moda...",
-    content: "# UX Roadmap Checklist\n\n- [x] Responsive layout for mobile & desktop\n- [x] Keyboard shortcuts modal",
-    tags: [SAMPLE_TAGS[6], SAMPLE_TAGS[7]],
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-  },
-];
+interface NoteItem {
+  id: string;
+  emoji?: string;
+  title: string;
+  preview?: string;
+  content: string;
+  tags: Pick<TagData, "id" | "name">[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 // Temporary showcase for reviewing components as they're built.
 // Gets replaced with the real notes app shell.
 export function NotesApp() {
   const [activeView, setActiveView] = useState<"notes" | "trash">("notes");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [notes, setNotes] = useState(INITIAL_NOTES);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>("1");
+  const [notes, setNotes] = useState<NoteItem[]>([]);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const createNote = useCreateNote();
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId);
+
+  async function handleNewNote() {
+    try {
+      const note = await createNote.mutateAsync({ title: "Untitled Note", content: "" });
+      setNotes((prev) => [{ ...note, emoji: "📝", preview: "", tags: [] }, ...prev]);
+      setSelectedNoteId(note.id);
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Couldn't create the note. Please try again.";
+      toast.error(message);
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
@@ -68,17 +60,19 @@ export function NotesApp() {
         tags={SAMPLE_TAGS}
         selectedTagId={selectedTagId}
         onTagSelect={setSelectedTagId}
-        onNewNote={() => console.log("new note")}
+        onNewNote={handleNewNote}
       />
       <NoteList
         className="flex-[2]"
         notes={notes}
         selectedNoteId={selectedNoteId}
         onSelectNote={setSelectedNoteId}
+        onCreateNote={handleNewNote}
       />
       {selectedNote && (
         <NoteEditor
           className="flex-[3]"
+          noteId={selectedNote.id}
           emoji={selectedNote.emoji}
           title={selectedNote.title}
           onTitleChange={(title) =>
@@ -94,7 +88,13 @@ export function NotesApp() {
           }
           preview={preview}
           onPreviewChange={setPreview}
-          saved
+          onSaved={(saved) =>
+            setNotes((prev) =>
+              prev.map((note) =>
+                note.id === saved.id ? { ...note, updatedAt: saved.updatedAt } : note,
+              ),
+            )
+          }
           tags={selectedNote.tags}
           onAddTag={(name) =>
             setNotes((prev) =>

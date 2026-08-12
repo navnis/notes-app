@@ -2,11 +2,11 @@ import { act, renderHook } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { meRequest, refreshRequest } from "@/auth/authApi";
+import { meRequest, refreshRequest } from "@/api/auth";
 import { authAtom, sessionRestoredAtom } from "@/store/auth";
 import { useAuth } from "./useAuth";
 
-vi.mock("@/auth/authApi", () => ({
+vi.mock("@/api/auth", () => ({
   loginRequest: vi.fn(),
   registerRequest: vi.fn(),
   logoutRequest: vi.fn(),

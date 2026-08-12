@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search } from "lucide-react";
-import { Input, NoteCard, Select } from "@/components";
+import { FileText, Search, SearchX } from "lucide-react";
+import { EmptyState, Input, NoteCard, Select } from "@/components";
 import { cn } from "@/lib/utils";
 import type { NoteListItem } from "./types";
 import { SORT_OPTIONS } from "./NoteList.constants";
@@ -10,10 +10,12 @@ export interface NoteListProps {
   notes: NoteListItem[];
   selectedNoteId?: string | null;
   onSelectNote: (id: string) => void;
+  /** Shown as the empty-state's action when there are no notes at all. */
+  onCreateNote?: () => void;
   className?: string;
 }
 
-export function NoteList({ notes, selectedNoteId, onSelectNote, className }: NoteListProps) {
+export function NoteList({ notes, selectedNoteId, onSelectNote, onCreateNote, className }: NoteListProps) {
   const [query, setQuery] = useState("");
   const [sortBy, setSortBy] = useState("updatedAt");
   const searchRef = useRef<HTMLInputElement>(null);
@@ -65,20 +67,40 @@ export function NoteList({ notes, selectedNoteId, onSelectNote, className }: Not
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
-        {visibleNotes.map((note) => (
-          <NoteCard
-            key={note.id}
-            emoji={note.emoji}
-            title={note.title}
-            preview={note.preview}
-            tags={note.tags}
-            updatedAt={note.updatedAt}
-            selected={note.id === selectedNoteId}
-            onClick={() => onSelectNote(note.id)}
+      {visibleNotes.length === 0 ? (
+        notes.length === 0 ? (
+          <EmptyState
+            icon={<FileText className="size-7" />}
+            title="No notes yet"
+            description="Create your first note to get started."
+            actionLabel="+ New Note"
+            onAction={onCreateNote}
           />
-        ))}
-      </div>
+        ) : (
+          <EmptyState
+            icon={<SearchX className="size-7" />}
+            title="No notes match your search"
+            description="Try a different search term to see more notes."
+            actionLabel="Clear search"
+            onAction={() => setQuery("")}
+          />
+        )
+      ) : (
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
+          {visibleNotes.map((note) => (
+            <NoteCard
+              key={note.id}
+              emoji={note.emoji}
+              title={note.title}
+              preview={note.preview}
+              tags={note.tags}
+              updatedAt={note.updatedAt}
+              selected={note.id === selectedNoteId}
+              onClick={() => onSelectNote(note.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

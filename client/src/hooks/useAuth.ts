@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useAtom } from "jotai";
-import { loginRequest, logoutRequest, meRequest, refreshRequest, registerRequest } from "@/auth/authApi";
+import { loginRequest, logoutRequest, meRequest, refreshRequest, registerRequest } from "@/api/auth";
 import { toast } from "@/components";
 import { ApiError } from "@/lib/api";
 import { authAtom, sessionRestoredAtom } from "@/store/auth";

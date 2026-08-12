@@ -1,11 +1,18 @@
-import { useState } from "react";
-import { CheckCircle2, Eye, Pencil, Tag as TagIcon, Trash2 } from "lucide-react";
-import type { Tag as TagData } from "@notes/shared";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircle, CheckCircle2, Eye, Loader2, Pencil, Tag as TagIcon, Trash2 } from "lucide-react";
+import type { Note, Tag as TagData } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Button, MarkdownEditor, Modal, Tag, toast } from "@/components";
+import { useUpdateNote } from "@/hooks/useNotes";
+import { ApiError } from "@/lib/api";
 import { formatDateTime } from "./NoteEditor.utils";
+import { AUTOSAVE_DEBOUNCE_MS } from "./NoteEditor.constants";
+
+type SaveStatus = "saved" | "saving" | "error";
 
 export interface NoteEditorProps {
+  /** The note currently being edited — autosave calls `PUT /api/notes/:id` against this. */
+  noteId: string;
   /** Optional leading emoji shown before the title, e.g. "🚀". */
   emoji?: string;
   title: string;
@@ -14,8 +21,8 @@ export interface NoteEditorProps {
   onChange: (value: string) => void;
   preview: boolean;
   onPreviewChange: (preview: boolean) => void;
-  /** Shows a "Saved" indicator when true. Will be driven by API/save state once that exists. */
-  saved?: boolean;
+  /** Fired after a successful autosave with the server's copy of the note (fresh `updatedAt`, etc). */
+  onSaved?: (note: Note) => void;
   onDelete: () => void;
   tags: Pick<TagData, "id" | "name">[];
   onAddTag: (name: string) => void;
@@ -26,6 +33,7 @@ export interface NoteEditorProps {
 }
 
 export function NoteEditor({
+  noteId,
   emoji,
   title,
   onTitleChange,
@@ -33,7 +41,7 @@ export function NoteEditor({
   onChange,
   preview,
   onPreviewChange,
-  saved,
+  onSaved,
   onDelete,
   tags,
   onAddTag,
@@ -44,6 +52,47 @@ export function NoteEditor({
 }: NoteEditorProps) {
   const [newTag, setNewTag] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
+  const updateNote = useUpdateNote();
+  // Skips the very next autosave — set whenever `noteId` changes (switching
+  // to a note, including the initial mount) so loading a note's existing
+  // title/content isn't mistaken for a user edit.
+  const skipNextSave = useRef(true);
+
+  useEffect(() => {
+    skipNextSave.current = true;
+    setSaveStatus("saved");
+  }, [noteId]);
+
+  useEffect(() => {
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
+
+    setSaveStatus("saving");
+    const timeout = setTimeout(() => {
+      updateNote.mutate(
+        { id: noteId, input: { title, content: value } },
+        {
+          onSuccess: (note) => {
+            setSaveStatus("saved");
+            onSaved?.(note);
+          },
+          onError: (error) => {
+            setSaveStatus("error");
+            toast.error(error instanceof ApiError ? error.message : "Couldn't save your changes.");
+          },
+        },
+      );
+    }, AUTOSAVE_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeout);
+    // Only the edited fields should re-trigger the debounce timer — noteId
+    // switches are handled by the effect above, and updateNote/onSaved are
+    // stable enough in practice not to matter here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, value]);
 
   const handleAddTag = () => {
     const name = newTag.trim();
@@ -93,10 +142,22 @@ export function NoteEditor({
               Preview
             </button>
           </div>
-          {saved && (
+          {saveStatus === "saving" && (
+            <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              Saving…
+            </span>
+          )}
+          {saveStatus === "saved" && (
             <span className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
               <CheckCircle2 className="size-3.5" />
               Saved
+            </span>
+          )}
+          {saveStatus === "error" && (
+            <span className="flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
+              <AlertCircle className="size-3.5" />
+              Failed to save
             </span>
           )}
         </div>
