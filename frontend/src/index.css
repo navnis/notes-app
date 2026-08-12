@@ -1,8 +1,76 @@
-* {
-  box-sizing: border-box;
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #eff5fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4f9fc;
+  --color-border: #d7e3ed;
+  --color-text: #16232e;
+  --color-text-muted: #5c7285;
+  --color-text-faint: #93a6b8;
+  --color-brand: #2e7cb8;
+  --color-brand-ink: #ffffff;
+  --color-brand-soft: #dceefb;
+  --color-brand-soft-border: #b9def3;
+  --color-danger: #b1473c;
+  --color-danger-soft: #f6e3e1;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+}
+
+/* shadcn/ui semantic tokens, mapped onto the palette above rather than
+   shadcn's own defaults — its component source references these names
+   directly (bg-primary, bg-accent, etc.), so the names themselves stay
+   fixed, but every value traces back to our own theme tokens. */
+:root {
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-text);
+  --primary: var(--color-brand);
+  --primary-foreground: var(--color-brand-ink);
+  --secondary: var(--color-surface-2);
+  --secondary-foreground: var(--color-text);
+  --muted: var(--color-surface-2);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-brand-soft);
+  --accent-foreground: var(--color-brand);
+  --destructive: var(--color-danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-brand);
+  --radius: var(--radius-md);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-xl: calc(var(--radius) + 8px);
 }
 
 body {
-  margin: 0;
-  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
