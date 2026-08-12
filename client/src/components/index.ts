@@ -6,3 +6,4 @@ export * from "./Toast";
 export * from "./Select";
 export * from "./Loading";
 export * from "./MarkdownEditor";
+export * from "./NoteCard";

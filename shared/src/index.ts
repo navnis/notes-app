@@ -19,3 +19,10 @@ export interface UpdateNoteInput {
 export interface ApiResponse<T> {
   data: T;
 }
+
+export interface Tag {
+  id: string;
+  name: string;
+  /** Number of notes currently using this tag. */
+  count: number;
+}

@@ -61,7 +61,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={effectiveType}
             className={cn(
-              "h-9 w-full rounded-lg border bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+              "h-9 w-full appearance-none rounded-lg border bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
               error ? "border-destructive" : "border-input",
               icon && "pl-9",
               effectiveTrailing && "pr-9",
