@@ -1,6 +1,6 @@
 import { CheckCircle2, X, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ToastItem } from "./toastStore";
+import type { ToastItem } from "./types";
 
 export interface ToastProps {
   toast: ToastItem;

@@ -1,10 +1,4 @@
-export type ToastVariant = "success" | "error";
-
-export interface ToastItem {
-  id: string;
-  message: string;
-  variant: ToastVariant;
-}
+import type { ToastItem, ToastVariant } from "./types";
 
 const DURATION_MS = 4000;
 
