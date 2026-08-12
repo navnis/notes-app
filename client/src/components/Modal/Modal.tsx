@@ -16,6 +16,8 @@ export interface ModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   confirmVariant?: "primary" | "danger";
+  /** Shows a spinner on the Confirm button and disables both footer buttons. */
+  confirmLoading?: boolean;
 }
 
 export function Modal({
@@ -29,6 +31,7 @@ export function Modal({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   confirmVariant = "primary",
+  confirmLoading = false,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -64,10 +67,10 @@ export function Modal({
 
   const footer = children ?? (onConfirm && (
     <div className="flex justify-end gap-2">
-      <Button variant="ghost" onClick={onClose}>
+      <Button variant="ghost" onClick={onClose} disabled={confirmLoading}>
         {cancelLabel}
       </Button>
-      <Button variant={confirmVariant} onClick={onConfirm}>
+      <Button variant={confirmVariant} onClick={onConfirm} loading={confirmLoading}>
         {confirmLabel}
       </Button>
     </div>

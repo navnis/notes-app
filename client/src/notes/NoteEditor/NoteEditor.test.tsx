@@ -195,6 +195,40 @@ describe("NoteEditor", () => {
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
+  it("shows a loading confirm button while onDelete is pending, and closes the modal once it resolves", async () => {
+    let resolveDelete!: () => void;
+    const onDelete = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+    renderEditor({ onDelete });
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete note" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(screen.getByRole("button", { name: "Delete" })).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByText("Delete note?")).toBeVisible();
+
+    await act(async () => {
+      resolveDelete();
+    });
+
+    expect(screen.queryByText("Delete note?")).not.toBeVisible();
+  });
+
+  it("keeps the modal open (and re-enables Delete) if onDelete rejects", async () => {
+    const onDelete = vi.fn().mockRejectedValue(new Error("boom"));
+    renderEditor({ onDelete });
+
+    await userEvent.click(screen.getByRole("button", { name: "Delete note" }));
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    expect(screen.getByText("Delete note?")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete" })).not.toHaveAttribute("aria-busy");
+  });
+
   it("controlled: content changes flow through onChange", async () => {
     function Controlled() {
       const [value, setValue] = useState("");

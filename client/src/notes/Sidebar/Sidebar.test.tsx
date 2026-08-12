@@ -16,15 +16,7 @@ const TAGS = [
 function renderSidebar(overrides: Partial<React.ComponentProps<typeof Sidebar>> = {}) {
   return render(
     <MemoryRouter>
-      <Sidebar
-        allNotesCount={3}
-        trashCount={0}
-        activeView="notes"
-        onViewChange={vi.fn()}
-        tags={TAGS}
-        onNewNote={vi.fn()}
-        {...overrides}
-      />
+      <Sidebar allNotesCount={3} tags={TAGS} onNewNote={vi.fn()} {...overrides} />
     </MemoryRouter>,
   );
 }
@@ -34,9 +26,13 @@ describe("Sidebar", () => {
     renderSidebar({ appName: "My Notes" });
     expect(screen.getByText("My Notes")).toBeInTheDocument();
     expect(screen.getByText("All Notes")).toBeInTheDocument();
-    expect(screen.getByText("Trash")).toBeInTheDocument();
     expect(screen.getByText("#frontend")).toBeInTheDocument();
     expect(screen.getByText("#backend")).toBeInTheDocument();
+  });
+
+  it("shows a message instead of the tags list when there are no tags", () => {
+    renderSidebar({ tags: [] });
+    expect(screen.getByText("No tags yet.")).toBeInTheDocument();
   });
 
   it("calls onNewNote when the New Note button is clicked", async () => {
@@ -44,13 +40,6 @@ describe("Sidebar", () => {
     renderSidebar({ onNewNote });
     await userEvent.click(screen.getByRole("button", { name: /new note/i }));
     expect(onNewNote).toHaveBeenCalledTimes(1);
-  });
-
-  it("calls onViewChange with the clicked view", async () => {
-    const onViewChange = vi.fn();
-    renderSidebar({ onViewChange });
-    await userEvent.click(screen.getByRole("button", { name: /trash/i }));
-    expect(onViewChange).toHaveBeenCalledWith("trash");
   });
 
   it("selects a tag on click and deselects it on a second click", async () => {

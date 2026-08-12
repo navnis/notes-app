@@ -23,7 +23,7 @@ export interface NoteEditorProps {
   onPreviewChange: (preview: boolean) => void;
   /** Fired after a successful autosave with the server's copy of the note (fresh `updatedAt`, etc). */
   onSaved?: (note: Note) => void;
-  onDelete: () => void;
+  onDelete: () => void | Promise<void>;
   tags: Pick<TagData, "id" | "name">[];
   onAddTag: (name: string) => void;
   onRemoveTag: (id: string) => void;
@@ -52,6 +52,7 @@ export function NoteEditor({
 }: NoteEditorProps) {
   const [newTag, setNewTag] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const updateNote = useUpdateNote();
   // Skips the very next autosave — set whenever `noteId` changes (switching
@@ -228,12 +229,21 @@ export function NoteEditor({
         onClose={() => setConfirmingDelete(false)}
         title="Delete note?"
         description="This can't be undone."
-        onConfirm={() => {
-          setConfirmingDelete(false);
-          onDelete();
+        onConfirm={async () => {
+          setDeleting(true);
+          try {
+            await onDelete();
+            setConfirmingDelete(false);
+          } catch {
+            // Failure is already surfaced to the user by the caller (toast) —
+            // just keep the modal open so they can retry.
+          } finally {
+            setDeleting(false);
+          }
         }}
         confirmLabel="Delete"
         confirmVariant="danger"
+        confirmLoading={deleting}
       />
     </div>
   );

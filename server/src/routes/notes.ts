@@ -20,9 +20,13 @@ function toNoteResponse(note: HydratedDocument<Note>) {
   };
 }
 
-router.get("/", async (_req, res) => {
-  const notes = await NoteModel.find().sort({ updatedAt: -1 });
-  res.json(notes);
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const notes = await NoteModel.find({ userId: (req as AuthedRequest).userId }).sort({ updatedAt: -1 });
+    res.json(notes.map(toNoteResponse));
+  } catch (error) {
+    handleRouteError(error, res, "List notes");
+  }
 });
 
 router.get("/:id", async (req, res) => {
@@ -67,13 +71,19 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
-  const note = await NoteModel.findByIdAndDelete(req.params.id);
-  if (!note) {
-    res.status(404).json({ message: "Note not found" });
-    return;
+router.delete("/:id", requireAuth, async (req, res) => {
+  try {
+    const note = await NoteModel.findOneAndDelete({
+      _id: req.params.id,
+      userId: (req as AuthedRequest).userId,
+    });
+    if (!note) {
+      throw new AppError(404, "Note not found");
+    }
+    res.json({ message: "Note deleted" });
+  } catch (error) {
+    handleRouteError(error, res, "Delete note");
   }
-  res.json({ message: "Note deleted" });
 });
 
 export default router;

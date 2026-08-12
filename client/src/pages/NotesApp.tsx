@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Tag as TagData } from "@notes/shared";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
-import { toast } from "@/components";
-import { useCreateNote } from "@/hooks/useNotes";
+import { Loading, toast } from "@/components";
+import { useNotes, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
 import { ApiError } from "@/lib/api";
+import { toPreviewText } from "./NotesApp.utils";
 
 const SAMPLE_TAGS = [
   { id: "1", name: "architecture", count: 1 },
@@ -30,19 +31,46 @@ interface NoteItem {
 // Temporary showcase for reviewing components as they're built.
 // Gets replaced with the real notes app shell.
 export function NotesApp() {
-  const [activeView, setActiveView] = useState<"notes" | "trash">("notes");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [notes, setNotes] = useState<NoteItem[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const { data: fetchedNotes, isLoading, isError } = useNotes();
   const createNote = useCreateNote();
+  const deleteNote = useDeleteNote();
+
+  useEffect(() => {
+    if (!fetchedNotes) return;
+    setNotes((prev) =>
+      fetchedNotes.map((note) => {
+        // The selected note may have local edits the debounced autosave
+        // hasn't caught up to yet — a background refetch (e.g. window
+        // refocus) shouldn't clobber those with a possibly-older server copy.
+        if (note.id === selectedNoteId) {
+          const existing = prev.find((prevNote) => prevNote.id === note.id);
+          if (existing) return existing;
+        }
+        return { ...note, emoji: "📝", preview: toPreviewText(note.content), tags: [] };
+      }),
+    );
+    // Only the fetch result should re-run this merge — selectedNoteId is read,
+    // not reacted to, so switching notes doesn't re-trigger a merge itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedNotes]);
+
+  useEffect(() => {
+    if (isError) toast.error("Couldn't load your notes. Please try again.");
+  }, [isError]);
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId);
 
   async function handleNewNote() {
     try {
       const note = await createNote.mutateAsync({ title: "Untitled Note", content: "" });
-      setNotes((prev) => [{ ...note, emoji: "📝", preview: "", tags: [] }, ...prev]);
+      setNotes((prev) => [
+        { ...note, emoji: "📝", preview: toPreviewText(note.content), tags: [] },
+        ...prev,
+      ]);
       setSelectedNoteId(note.id);
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "Couldn't create the note. Please try again.";
@@ -50,13 +78,30 @@ export function NotesApp() {
     }
   }
 
+  async function handleDeleteNote(id: string) {
+    try {
+      await deleteNote.mutateAsync(id);
+      setNotes((prev) => prev.filter((note) => note.id !== id));
+      setSelectedNoteId((prev) => (prev === id ? null : prev));
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Couldn't delete the note. Please try again.";
+      toast.error(message);
+      throw error;
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full min-h-0 items-center justify-center p-4">
+        <Loading label="Loading notes..." />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
       <Sidebar
         allNotesCount={notes.length}
-        trashCount={0}
-        activeView={activeView}
-        onViewChange={setActiveView}
         tags={SAMPLE_TAGS}
         selectedTagId={selectedTagId}
         onTagSelect={setSelectedTagId}
@@ -83,7 +128,11 @@ export function NotesApp() {
           value={selectedNote.content}
           onChange={(value) =>
             setNotes((prev) =>
-              prev.map((note) => (note.id === selectedNote.id ? { ...note, content: value } : note)),
+              prev.map((note) =>
+                note.id === selectedNote.id
+                  ? { ...note, content: value, preview: toPreviewText(value) }
+                  : note,
+              ),
             )
           }
           preview={preview}
@@ -114,10 +163,7 @@ export function NotesApp() {
               ),
             )
           }
-          onDelete={() => {
-            setNotes((prev) => prev.filter((note) => note.id !== selectedNote.id));
-            setSelectedNoteId(null);
-          }}
+          onDelete={() => handleDeleteNote(selectedNote.id)}
           createdAt={selectedNote.createdAt}
           updatedAt={selectedNote.updatedAt}
         />
