@@ -47,4 +47,16 @@ describe("Input", () => {
     const input = screen.getByLabelText("Email");
     expect(label).toHaveAttribute("for", input.id);
   });
+
+  it("toggles password visibility internally when togglePasswordVisibility is set", async () => {
+    render(<Input label="Password" type="password" togglePasswordVisibility />);
+    const input = screen.getByLabelText("Password");
+    expect(input).toHaveAttribute("type", "password");
+
+    await userEvent.click(screen.getByRole("button", { name: "Show password" }));
+    expect(input).toHaveAttribute("type", "text");
+
+    await userEvent.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(input).toHaveAttribute("type", "password");
+  });
 });
