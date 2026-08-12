@@ -46,3 +46,5 @@ export const Toast = memo(function Toast({ toast, onDismiss }: ToastProps) {
     </div>
   );
 });
+
+Toast.displayName = "Toast";

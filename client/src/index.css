@@ -70,6 +70,15 @@
   --radius-xl: calc(var(--radius) + 8px);
 }
 
+/* Establishes a real height chain so any h-full/h-screen usage in the tree
+   (Sidebar, page shells, etc.) has something to size against — html/body/#root
+   default to auto height otherwise. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-text);
