@@ -36,7 +36,7 @@ export const Sidebar = memo(function Sidebar({
   return (
     <aside
       className={cn(
-        "flex w-full flex-col gap-6 border-b border-border bg-card p-4 sm:h-full sm:w-72 sm:border-b-0 sm:border-r",
+        "flex w-full flex-col gap-6 rounded-lg bg-card p-4 shadow-sm sm:h-full sm:w-72",
         className,
       )}
     >
