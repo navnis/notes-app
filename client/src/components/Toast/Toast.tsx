@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CheckCircle2, X, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ToastItem } from "./types";
@@ -12,7 +13,10 @@ const icons = {
   error: XCircle,
 };
 
-export function Toast({ toast, onDismiss }: ToastProps) {
+// Toasts keep a stable object reference across store updates (see
+// toastStore's [...toasts, next]), so memo skips re-rendering existing
+// toasts whenever the list changes elsewhere (one added/dismissed).
+export const Toast = memo(function Toast({ toast, onDismiss }: ToastProps) {
   const Icon = icons[toast.variant];
 
   return (
@@ -41,4 +45,4 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       </button>
     </div>
   );
-}
+});
