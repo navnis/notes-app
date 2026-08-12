@@ -1,7 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import { Sidebar } from "./Sidebar";
+
+vi.mock("@/auth/authApi", () => ({
+  logoutRequest: vi.fn().mockResolvedValue(undefined),
+}));
 
 const TAGS = [
   { id: "1", name: "frontend", count: 2 },
@@ -10,15 +15,17 @@ const TAGS = [
 
 function renderSidebar(overrides: Partial<React.ComponentProps<typeof Sidebar>> = {}) {
   return render(
-    <Sidebar
-      allNotesCount={3}
-      trashCount={0}
-      activeView="notes"
-      onViewChange={vi.fn()}
-      tags={TAGS}
-      onNewNote={vi.fn()}
-      {...overrides}
-    />,
+    <MemoryRouter>
+      <Sidebar
+        allNotesCount={3}
+        trashCount={0}
+        activeView="notes"
+        onViewChange={vi.fn()}
+        tags={TAGS}
+        onNewNote={vi.fn()}
+        {...overrides}
+      />
+    </MemoryRouter>,
   );
 }
 
@@ -58,21 +65,8 @@ describe("Sidebar", () => {
     expect(onTagSelect).toHaveBeenCalledWith(null);
   });
 
-  it("shows Synced or Offline based on the synced prop", () => {
-    const { rerender } = renderSidebar({ synced: true });
-    expect(screen.getByText("Synced")).toBeInTheDocument();
-
-    rerender(
-      <Sidebar
-        allNotesCount={3}
-        trashCount={0}
-        activeView="notes"
-        onViewChange={vi.fn()}
-        tags={TAGS}
-        onNewNote={vi.fn()}
-        synced={false}
-      />,
-    );
-    expect(screen.getByText("Offline")).toBeInTheDocument();
+  it("renders a log out button at the bottom", () => {
+    renderSidebar();
+    expect(screen.getByRole("button", { name: /log out/i })).toBeInTheDocument();
   });
 });

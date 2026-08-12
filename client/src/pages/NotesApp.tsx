@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { LogoutButton } from "@/auth";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
 
 const SAMPLE_TAGS = [
@@ -60,76 +59,69 @@ export function NotesApp() {
   const selectedNote = notes.find((note) => note.id === selectedNoteId);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4">
-      <div className="flex justify-end">
-        <LogoutButton />
-      </div>
-      <div className="flex h-full min-h-0 flex-col gap-4 sm:flex-row">
-        <Sidebar
-          allNotesCount={notes.length}
-          trashCount={0}
-          activeView={activeView}
-          onViewChange={setActiveView}
-          tags={SAMPLE_TAGS}
-          selectedTagId={selectedTagId}
-          onTagSelect={setSelectedTagId}
-          onNewNote={() => console.log("new note")}
+    <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
+      <Sidebar
+        allNotesCount={notes.length}
+        trashCount={0}
+        activeView={activeView}
+        onViewChange={setActiveView}
+        tags={SAMPLE_TAGS}
+        selectedTagId={selectedTagId}
+        onTagSelect={setSelectedTagId}
+        onNewNote={() => console.log("new note")}
+      />
+      <NoteList
+        className="flex-[2]"
+        notes={notes}
+        selectedNoteId={selectedNoteId}
+        onSelectNote={setSelectedNoteId}
+      />
+      {selectedNote && (
+        <NoteEditor
+          className="flex-[3]"
+          emoji={selectedNote.emoji}
+          title={selectedNote.title}
+          onTitleChange={(title) =>
+            setNotes((prev) =>
+              prev.map((note) => (note.id === selectedNote.id ? { ...note, title } : note)),
+            )
+          }
+          value={selectedNote.content}
+          onChange={(value) =>
+            setNotes((prev) =>
+              prev.map((note) => (note.id === selectedNote.id ? { ...note, content: value } : note)),
+            )
+          }
+          preview={preview}
+          onPreviewChange={setPreview}
+          saved
+          tags={selectedNote.tags}
+          onAddTag={(name) =>
+            setNotes((prev) =>
+              prev.map((note) =>
+                note.id === selectedNote.id
+                  ? { ...note, tags: [...note.tags, { id: crypto.randomUUID(), name, count: 1 }] }
+                  : note,
+              ),
+            )
+          }
+          onRemoveTag={(id) =>
+            setNotes((prev) =>
+              prev.map((note) =>
+                note.id === selectedNote.id
+                  ? { ...note, tags: note.tags.filter((tag) => tag.id !== id) }
+                  : note,
+              ),
+            )
+          }
+          onDelete={() => {
+            setNotes((prev) => prev.filter((note) => note.id !== selectedNote.id));
+            setSelectedNoteId(null);
+          }}
+          createdAt={selectedNote.createdAt}
+          updatedAt={selectedNote.updatedAt}
         />
-        <NoteList
-          className="flex-[2]"
-          notes={notes}
-          selectedNoteId={selectedNoteId}
-          onSelectNote={setSelectedNoteId}
-        />
-        {selectedNote && (
-          <NoteEditor
-            className="flex-[3]"
-            emoji={selectedNote.emoji}
-            title={selectedNote.title}
-            onTitleChange={(title) =>
-              setNotes((prev) =>
-                prev.map((note) => (note.id === selectedNote.id ? { ...note, title } : note)),
-              )
-            }
-            value={selectedNote.content}
-            onChange={(value) =>
-              setNotes((prev) =>
-                prev.map((note) =>
-                  note.id === selectedNote.id ? { ...note, content: value } : note,
-                ),
-              )
-            }
-            preview={preview}
-            onPreviewChange={setPreview}
-            saved
-            tags={selectedNote.tags}
-            onAddTag={(name) =>
-              setNotes((prev) =>
-                prev.map((note) =>
-                  note.id === selectedNote.id
-                    ? { ...note, tags: [...note.tags, { id: crypto.randomUUID(), name, count: 1 }] }
-                    : note,
-                ),
-              )
-            }
-            onRemoveTag={(id) =>
-              setNotes((prev) =>
-                prev.map((note) =>
-                  note.id === selectedNote.id
-                    ? { ...note, tags: note.tags.filter((tag) => tag.id !== id) }
-                    : note,
-                ),
-              )
-            }
-            onDelete={() => {
-              setNotes((prev) => prev.filter((note) => note.id !== selectedNote.id));
-              setSelectedNoteId(null);
-            }}
-            createdAt={selectedNote.createdAt}
-            updatedAt={selectedNote.updatedAt}
-          />
-        )}
-      </div>
+      )}
     </div>
   );
 }

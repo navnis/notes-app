@@ -18,6 +18,7 @@ export function LogoutButton() {
       variant="ghost"
       icon={<LogOut className="size-4" />}
       onClick={handleLogout}
+      className="w-full justify-start border border-border"
     >
       Log out
     </Button>

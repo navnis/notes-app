@@ -3,6 +3,7 @@ import { BookOpen, FileText, Plus, Trash2 } from "lucide-react";
 import type { Tag as TagData } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Button, Tag } from "@/components";
+import { LogoutButton } from "@/auth";
 import { NavRow } from "./NavRow";
 
 export interface SidebarProps {
@@ -16,7 +17,6 @@ export interface SidebarProps {
   selectedTagId?: string | null;
   onTagSelect?: (id: string | null) => void;
   onNewNote: () => void;
-  synced?: boolean;
   className?: string;
 }
 
@@ -30,7 +30,6 @@ export const Sidebar = memo(function Sidebar({
   selectedTagId,
   onTagSelect,
   onNewNote,
-  synced = true,
   className,
 }: SidebarProps) {
   return (
@@ -44,13 +43,7 @@ export const Sidebar = memo(function Sidebar({
         <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <BookOpen className="size-5" />
         </span>
-        <div>
-          <p className="text-base font-bold text-foreground">{appName}</p>
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-            Workspace Active
-          </p>
-        </div>
+        <p className="text-base font-bold text-foreground">{appName}</p>
       </div>
 
       <Button onClick={onNewNote} icon={<Plus className="size-4" />} className="w-full">
@@ -98,12 +91,8 @@ export const Sidebar = memo(function Sidebar({
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
-        <span
-          className={cn("size-1.5 rounded-full", synced ? "bg-primary" : "bg-muted-foreground")}
-          aria-hidden="true"
-        />
-        {synced ? "Synced" : "Offline"}
+      <div className="border-t border-border pt-3">
+        <LogoutButton />
       </div>
     </aside>
   );

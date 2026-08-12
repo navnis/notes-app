@@ -4,11 +4,11 @@
   --color-bg: #eff5fa;
   --color-surface: #ffffff;
   --color-surface-2: #f4f9fc;
-  --color-border: #d7e3ed;
+  --color-border: rgb(224 242 254 / 0.8);
   --color-text: #16232e;
   --color-text-muted: #5c7285;
   --color-text-faint: #93a6b8;
-  --color-brand: #2e7cb8;
+  --color-brand: #0ea5e9;
   --color-brand-ink: #ffffff;
   --color-brand-soft: #dceefb;
   --color-brand-soft-border: #b9def3;
@@ -64,7 +64,6 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --radius-xl: calc(var(--radius) + 8px);
