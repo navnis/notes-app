@@ -48,6 +48,18 @@ describe("Input", () => {
     expect(label).toHaveAttribute("for", input.id);
   });
 
+  it("shows a required asterisk after the label and sets the native required attribute", () => {
+    const { container } = render(<Input label="Email" required />);
+    expect(container.querySelector("label")?.textContent).toBe("Email *");
+    expect(screen.getByLabelText("Email *")).toBeRequired();
+  });
+
+  it("omits the required asterisk when not required", () => {
+    const { container } = render(<Input label="Email" />);
+    expect(container.querySelector("label")?.textContent).toBe("Email");
+    expect(screen.getByLabelText("Email")).not.toBeRequired();
+  });
+
   it("toggles password visibility internally when togglePasswordVisibility is set", async () => {
     render(<Input label="Password" type="password" togglePasswordVisibility />);
     const input = screen.getByLabelText("Password");
