@@ -74,9 +74,9 @@ export const MarkdownEditor = memo(
       }, []);
 
       return (
-        <div className="flex flex-col gap-1">
+        <div className={cn("flex min-h-0 flex-col gap-1", className)}>
           {label && (
-            <label htmlFor={fieldId} className="text-sm font-medium text-foreground">
+            <label htmlFor={fieldId} className="text-sm font-medium text-foreground shrink-0">
               {label}
             </label>
           )}
@@ -84,9 +84,8 @@ export const MarkdownEditor = memo(
           {preview ? (
             <div
               className={cn(
-                "min-h-40 w-full rounded-lg border bg-secondary px-3 py-2 text-sm text-foreground",
+                "min-h-40 w-full flex-1 min-h-0 overflow-y-auto rounded-lg border bg-secondary px-3 py-2 text-sm text-foreground",
                 error ? "border-destructive" : "border-input",
-                className,
               )}
             >
               {text ? (
@@ -100,12 +99,11 @@ export const MarkdownEditor = memo(
           ) : (
             <div
               className={cn(
-                "w-full rounded-lg border bg-secondary transition-colors focus-within:ring-2 focus-within:ring-ring",
+                "flex w-full flex-1 min-h-0 flex-col rounded-lg border bg-secondary transition-colors focus-within:ring-2 focus-within:ring-ring",
                 error ? "border-destructive" : "border-input",
-                className,
               )}
             >
-              <div className="flex items-center justify-between gap-2 border-b border-border px-2 py-1.5">
+              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-2 py-1.5">
                 <div className="flex items-center gap-0.5">
                   {TOOLBAR_ITEMS.map((item) => (
                     <button
@@ -128,7 +126,7 @@ export const MarkdownEditor = memo(
                 id={fieldId}
                 value={value}
                 rows={rows}
-                className="w-full resize-y bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full flex-1 min-h-0 resize-none overflow-y-auto bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 aria-invalid={error ? true : undefined}
                 {...props}
               />
@@ -136,7 +134,7 @@ export const MarkdownEditor = memo(
           )}
 
           {error && (
-            <p className="text-xs text-destructive" role="alert">
+            <p className="text-xs text-destructive shrink-0" role="alert">
               {error}
             </p>
           )}

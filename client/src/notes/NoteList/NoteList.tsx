@@ -38,7 +38,7 @@ export function NoteList({ notes, selectedNoteId, onSelectNote, className }: Not
   );
 
   return (
-    <div className={cn("flex h-full flex-col gap-4 p-4", className)}>
+    <div className={cn("flex h-full min-h-0 min-w-0 flex-col gap-4 p-4", className)}>
       <Input
         ref={searchRef}
         icon={<Search className="size-4" />}
