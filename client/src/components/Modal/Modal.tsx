@@ -77,9 +77,7 @@ export function Modal({
   ));
 
   return (
-    // Backdrop-click-to-dismiss, not a new interactive control — Escape
-    // already closes the dialog natively, so there's no keyboard
-    // equivalent to add here.
+    // Backdrop-click-to-dismiss — Escape already closes the dialog natively, no keyboard equivalent needed.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={dialogRef}

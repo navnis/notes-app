@@ -27,9 +27,7 @@ export function NotesApp() {
   const [sortBy, setSortBy] = useState<NoteSortField>("updatedAt");
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
-  // The one note currently open may have edits the debounced autosave
-  // hasn't caught up to yet — kept as a small local overlay so a background
-  // page refetch (react-query refocus, pagination) can't clobber them.
+  // Local overlay for the open note so a background page refetch can't clobber unsaved edits.
   const [noteOverlay, setNoteOverlay] = useState<NoteItem | null>(null);
 
   const filters = useMemo(
@@ -67,9 +65,7 @@ export function NotesApp() {
     if (isError) toast.error("Couldn't load your notes. Please try again.");
   }, [isError]);
 
-  // Loads the overlay fresh only when the selection itself changes (opening
-  // a different note, or closing one) — never on incidental re-fetches of
-  // `pages`, or the user's in-progress edits would get reset mid-typing.
+  // Only re-syncs the overlay when the selection itself changes, not on incidental `pages` refetches.
   useEffect(() => {
     if (!selectedNoteId) {
       setNoteOverlay(null);

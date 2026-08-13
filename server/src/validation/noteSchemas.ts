@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-// Trims each tag, drops empties, and dedupes case-insensitively (keeping the
-// first-seen casing) — mirrors the check the editor's own tag input already
-// does client-side, re-applied here since client validation can't be trusted.
+// Trims each tag, drops empties, and dedupes case-insensitively (keeping first-seen casing).
 const tagsSchema = z
   .array(z.string().trim())
   .transform((tags) => {

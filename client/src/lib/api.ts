@@ -10,9 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-// Sends our httpOnly auth cookies on every request and normalizes failures
-// into ApiError, so callers can catch one thing and read a message that's
-// already safe to show the user.
+// Sends our httpOnly auth cookies on every request and normalizes failures into a catchable ApiError.
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
   try {

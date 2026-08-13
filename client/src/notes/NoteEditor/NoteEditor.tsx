@@ -54,9 +54,7 @@ export function NoteEditor({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const updateNote = useUpdateNote();
   const queryClient = useQueryClient();
-  // Skips the very next autosave — set whenever `noteId` changes (switching
-  // to a note, including the initial mount) so loading a note's existing
-  // title/content isn't mistaken for a user edit.
+  // Skips the very next autosave so loading a note's existing content isn't mistaken for an edit.
   const skipNextSave = useRef(true);
 
   useEffect(() => {
@@ -88,15 +86,11 @@ export function NoteEditor({
     }, AUTOSAVE_DEBOUNCE_MS);
 
     return () => clearTimeout(timeout);
-    // Only the edited fields should re-trigger the debounce timer — noteId
-    // switches are handled by the effect above, and updateNote/onSaved are
-    // stable enough in practice not to matter here.
+    // Only the edited fields should retrigger the debounce timer, not noteId/updateNote/onSaved.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, value]);
 
-  // Tag add/remove save immediately (no debounce) — unlike title/content,
-  // each is already a single discrete action, not something the user is
-  // mid-way through typing.
+  // Tag add/remove save immediately (no debounce) — each is already a discrete action, not mid-typing.
   const saveTags = (nextTags: string[]) => {
     setSaveStatus("saving");
     updateNote.mutate(

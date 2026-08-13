@@ -1,9 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../utils/AppError.js";
 
-// Last-resort safety net — every route handler is expected to try/catch its
-// own logic and respond directly, but this catches anything that still
-// slips through (e.g. an unexpected thrown error) via next(error).
+// Last-resort safety net for anything that slips past a route's own try/catch.
 export function errorHandler(
   error: unknown,
   _req: Request,

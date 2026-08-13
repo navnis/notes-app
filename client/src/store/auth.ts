@@ -4,9 +4,7 @@ export interface AuthSession {
   email: string;
 }
 
-// Holds the logged-in session. null means logged out. Nothing sensitive
-// lives here — both the access and refresh tokens are httpOnly cookies the
-// browser manages on its own, invisible to (and untouched by) this code.
+// Holds the logged-in session (null = logged out) — tokens live in httpOnly cookies, not here.
 export const authAtom = atom<AuthSession | null>(null);
 
 // True once the app-load session-restore attempt has finished, either way

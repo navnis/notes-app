@@ -28,9 +28,7 @@ export function useAuth() {
   }
 
   function logout() {
-    // Clear the local session immediately rather than waiting on the
-    // network — the user is logged out client-side either way. The request
-    // just best-effort clears the httpOnly cookies server-side in the background.
+    // Clear the local session immediately; the server-side cookie revoke happens best-effort in the background.
     setSession(null);
     logoutRequest().catch((error: unknown) => {
       console.error("Failed to revoke session on the server:", error);
@@ -38,13 +36,7 @@ export function useAuth() {
     });
   }
 
-  // Called once on app load. Both tokens live in httpOnly cookies the
-  // browser sends automatically — there's nothing for the client to check
-  // locally, so this asks the server: first /me (cheap — valid only if the
-  // access-token cookie is still good), and only if that fails, /refresh
-  // (mints a new access-token cookie from the longer-lived refresh one).
-  // Neither succeeding is an expected outcome for a logged-out visitor, not
-  // an error — stays quiet either way.
+  // Called once on app load: tries /me first (cheap), falls back to /refresh — neither succeeding is fine, not an error.
   const restoreSession = useCallback(async () => {
     try {
       const { user } = await meRequest();

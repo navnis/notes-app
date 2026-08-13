@@ -2,9 +2,7 @@ import type { Response } from "express";
 import { z } from "zod";
 import { AppError } from "./AppError.js";
 
-// Shared catch-block logic for auth routes: each route still has its own
-// explicit try/catch, this just avoids repeating the same three branches
-// (validation error / known AppError / unexpected error) in every one.
+// Shared catch-block logic: validation error / known AppError / unexpected error, in one place.
 export function handleRouteError(error: unknown, res: Response, context: string): void {
   if (error instanceof z.ZodError) {
     res.status(400).json({ message: error.issues[0]?.message ?? "Invalid request." });
