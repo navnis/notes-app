@@ -1,7 +1,4 @@
-// A known, expected error (bad input, duplicate email, bad credentials, ...)
-// that a route handler catches and turns into a specific status + message,
-// as opposed to an unexpected bug that falls through to the generic 500
-// handler in middleware/errorHandler.ts.
+// A known, expected error a route turns into a specific status + message (vs. an unexpected bug).
 export class AppError extends Error {
   status: number;
 

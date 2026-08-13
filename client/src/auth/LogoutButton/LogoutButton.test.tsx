@@ -3,13 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { createStore, Provider } from "jotai";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { logoutRequest } from "@/auth/authApi";
+import { logoutRequest } from "@/api/auth";
 import { Toaster } from "@/components";
 import { __resetToastStoreForTests } from "@/components/Toast/toastStore";
 import { authAtom } from "@/store/auth";
 import { LogoutButton } from "./LogoutButton";
 
-vi.mock("@/auth/authApi", () => ({
+vi.mock("@/api/auth", () => ({
   logoutRequest: vi.fn(),
 }));
 

@@ -1,8 +1,6 @@
 import "@testing-library/jest-dom";
 
-// jsdom parses <dialog> but doesn't implement showModal()/close() at all
-// (https://github.com/jsdom/jsdom/issues/3294) — every real browser does.
-// Polyfill just enough for tests to exercise components that use it.
+// jsdom doesn't implement <dialog>'s showModal()/close() at all — polyfill enough to test with.
 if (!HTMLDialogElement.prototype.showModal) {
   HTMLDialogElement.prototype.showModal = function () {
     this.setAttribute("open", "");
@@ -13,9 +11,7 @@ if (!HTMLDialogElement.prototype.showModal) {
   };
 }
 
-// jsdom doesn't implement the Pointer Events capture methods at all —
-// Radix UI's components (e.g. Select) call these internally for their
-// pointer-driven interactions.
+// jsdom doesn't implement Pointer Events capture methods, which Radix UI (e.g. Select) calls internally.
 if (!Element.prototype.hasPointerCapture) {
   Element.prototype.hasPointerCapture = () => false;
   Element.prototype.setPointerCapture = () => {};
@@ -26,4 +22,17 @@ if (!Element.prototype.hasPointerCapture) {
 // Radix's Select calls it when scrolling a selected item into view.
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
+}
+
+// jsdom doesn't implement IntersectionObserver — NoteList uses one for infinite scroll.
+if (typeof IntersectionObserver === "undefined") {
+  class MockIntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+  globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 }

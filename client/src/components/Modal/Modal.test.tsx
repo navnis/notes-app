@@ -79,4 +79,21 @@ describe("Modal", () => {
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
+
+  it("shows a spinner on Confirm and disables both footer buttons when confirmLoading", () => {
+    render(
+      <Modal
+        open
+        onClose={vi.fn()}
+        title="Delete note?"
+        onConfirm={vi.fn()}
+        confirmLabel="Delete"
+        confirmLoading
+      />,
+    );
+    const confirmButton = screen.getByRole("button", { name: "Delete" });
+    expect(confirmButton).toBeDisabled();
+    expect(confirmButton).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  });
 });

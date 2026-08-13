@@ -1,36 +1,29 @@
 import { memo } from "react";
-import { BookOpen, FileText, Plus, Trash2 } from "lucide-react";
+import { BookOpen, FileText, Plus } from "lucide-react";
 import type { Tag as TagData } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Button, Tag } from "@/components";
+import { LogoutButton } from "@/auth";
 import { NavRow } from "./NavRow";
 
 export interface SidebarProps {
   /** Defaults to "Notes" — pass your own app name/branding. */
   appName?: string;
   allNotesCount: number;
-  trashCount: number;
-  activeView: "notes" | "trash";
-  onViewChange: (view: "notes" | "trash") => void;
   tags: TagData[];
   selectedTagId?: string | null;
   onTagSelect?: (id: string | null) => void;
   onNewNote: () => void;
-  synced?: boolean;
   className?: string;
 }
 
 export const Sidebar = memo(function Sidebar({
   appName = "Notes",
   allNotesCount,
-  trashCount,
-  activeView,
-  onViewChange,
   tags,
   selectedTagId,
   onTagSelect,
   onNewNote,
-  synced = true,
   className,
 }: SidebarProps) {
   return (
@@ -44,13 +37,7 @@ export const Sidebar = memo(function Sidebar({
         <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <BookOpen className="size-5" />
         </span>
-        <div>
-          <p className="text-base font-bold text-foreground">{appName}</p>
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-            Workspace Active
-          </p>
-        </div>
+        <p className="text-base font-bold text-foreground">{appName}</p>
       </div>
 
       <Button onClick={onNewNote} icon={<Plus className="size-4" />} className="w-full">
@@ -64,46 +51,33 @@ export const Sidebar = memo(function Sidebar({
         <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Views
         </p>
-        <NavRow
-          icon={<FileText className="size-4" />}
-          label="All Notes"
-          count={allNotesCount}
-          active={activeView === "notes"}
-          onClick={() => onViewChange("notes")}
-        />
-        <NavRow
-          icon={<Trash2 className="size-4" />}
-          label="Trash"
-          count={trashCount}
-          active={activeView === "trash"}
-          onClick={() => onViewChange("trash")}
-        />
+        <NavRow icon={<FileText className="size-4" />} label="All Notes" count={allNotesCount} active />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Tags
         </p>
-        <div className="flex flex-wrap gap-1.5 overflow-y-auto px-2">
-          {tags.map((tag) => (
-            <Tag
-              key={tag.id}
-              count={tag.count}
-              selected={tag.id === selectedTagId}
-              onClick={() => onTagSelect?.(tag.id === selectedTagId ? null : tag.id)}
-            >
-              #{tag.name}
-            </Tag>
-          ))}
-        </div>
+        {tags.length === 0 ? (
+          <p className="px-2 text-sm text-muted-foreground">No tags yet.</p>
+        ) : (
+          <div className="scrollbar-thin flex min-h-0 flex-wrap content-start gap-1.5 overflow-y-auto px-2">
+            {tags.map((tag) => (
+              <Tag
+                key={tag.id}
+                count={tag.count}
+                selected={tag.id === selectedTagId}
+                onClick={() => onTagSelect?.(tag.id === selectedTagId ? null : tag.id)}
+              >
+                #{tag.name}
+              </Tag>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
-        <span
-          className={cn("size-1.5 rounded-full", synced ? "bg-primary" : "bg-muted-foreground")}
-          aria-hidden="true"
-        />
-        {synced ? "Synced" : "Offline"}
+      <div className="border-t border-border pt-3">
+        <LogoutButton />
       </div>
     </aside>
   );

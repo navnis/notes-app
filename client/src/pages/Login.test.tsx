@@ -3,12 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { createStore, Provider } from "jotai";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it, vi } from "vitest";
-import { loginRequest } from "@/auth/authApi";
+import { loginRequest } from "@/api/auth";
 import { ApiError } from "@/lib/api";
 import { authAtom } from "@/store/auth";
 import { Login } from "./Login";
 
-vi.mock("@/auth/authApi", () => ({
+vi.mock("@/api/auth", () => ({
   loginRequest: vi.fn(),
 }));
 

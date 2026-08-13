@@ -13,9 +13,7 @@ const icons = {
   error: XCircle,
 };
 
-// Toasts keep a stable object reference across store updates (see
-// toastStore's [...toasts, next]), so memo skips re-rendering existing
-// toasts whenever the list changes elsewhere (one added/dismissed).
+// Toasts keep a stable object reference across store updates, so memo skips re-rendering existing ones.
 export const Toast = memo(function Toast({ toast, onDismiss }: ToastProps) {
   const Icon = icons[toast.variant];
 
