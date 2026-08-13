@@ -27,3 +27,18 @@ if (!Element.prototype.hasPointerCapture) {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
+
+// jsdom doesn't implement IntersectionObserver at all — NoteList uses one
+// to trigger infinite-scroll pagination. Tests don't need it to actually
+// fire; just need the class to exist so mounting doesn't throw.
+if (typeof IntersectionObserver === "undefined") {
+  class MockIntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+  }
+  globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+}

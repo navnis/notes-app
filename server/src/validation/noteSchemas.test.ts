@@ -23,6 +23,24 @@ describe("createNoteSchema", () => {
   it("rejects a missing title", () => {
     expect(() => createNoteSchema.parse({ content: "Some content" })).toThrow();
   });
+
+  it("allows tags to be omitted", () => {
+    const result = createNoteSchema.parse({ title: "My note" });
+    expect(result.tags).toBeUndefined();
+  });
+
+  it("trims tags and drops empty ones", () => {
+    const result = createNoteSchema.parse({ title: "My note", tags: ["  frontend  ", "  "] });
+    expect(result.tags).toEqual(["frontend"]);
+  });
+
+  it("dedupes tags case-insensitively, keeping the first-seen casing", () => {
+    const result = createNoteSchema.parse({
+      title: "My note",
+      tags: ["Frontend", "frontend", "API"],
+    });
+    expect(result.tags).toEqual(["Frontend", "API"]);
+  });
 });
 
 describe("updateNoteSchema", () => {
@@ -42,5 +60,10 @@ describe("updateNoteSchema", () => {
   it("trims a given title", () => {
     const result = updateNoteSchema.parse({ title: "  Renamed  " });
     expect(result.title).toBe("Renamed");
+  });
+
+  it("trims and dedupes tags on a partial update", () => {
+    const result = updateNoteSchema.parse({ tags: ["  backend  ", "backend", "Backend"] });
+    expect(result.tags).toEqual(["backend"]);
   });
 });

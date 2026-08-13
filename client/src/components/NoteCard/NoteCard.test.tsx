@@ -3,11 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { NoteCard } from "./NoteCard";
 
-const TAGS = [
-  { id: "1", name: "frontend" },
-  { id: "2", name: "backend" },
-  { id: "3", name: "api" },
-];
+const TAGS = ["frontend", "backend", "api"];
 
 describe("NoteCard", () => {
   it("renders the emoji, title and preview", () => {

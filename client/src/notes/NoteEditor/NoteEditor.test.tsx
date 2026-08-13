@@ -17,7 +17,7 @@ vi.mock("@/api/notes", () => ({
 
 const mockedUpdateNoteRequest = vi.mocked(updateNoteRequest);
 
-const TAGS = [{ id: "1", name: "frontend" }];
+const TAGS = ["frontend"];
 
 const BASE_PROPS: NoteEditorProps = {
   noteId: "note-1",
@@ -29,8 +29,6 @@ const BASE_PROPS: NoteEditorProps = {
   onPreviewChange: vi.fn(),
   onDelete: vi.fn(),
   tags: TAGS,
-  onAddTag: vi.fn(),
-  onRemoveTag: vi.fn(),
   createdAt: new Date("2026-01-01T10:00:00"),
   updatedAt: new Date("2026-01-02T12:00:00"),
 };
@@ -107,6 +105,7 @@ describe("NoteEditor", () => {
       id: "note-1",
       title: "My Note",
       content: "new content",
+      tags: [],
       createdAt: "2026-01-01T10:00:00.000Z",
       updatedAt: "2026-01-03T09:00:00.000Z",
     });
@@ -144,32 +143,50 @@ describe("NoteEditor", () => {
     expect(errorSpy).toHaveBeenCalledWith("Server exploded");
   });
 
-  it("renders tags and calls onRemoveTag", async () => {
-    const onRemoveTag = vi.fn();
-    renderEditor({ onRemoveTag });
+  it("renders tags and saves immediately (no debounce) when one is removed", async () => {
+    mockedUpdateNoteRequest.mockResolvedValue({
+      id: "note-1",
+      title: "My Note",
+      content: "hello",
+      tags: [],
+      createdAt: "2026-01-01T10:00:00.000Z",
+      updatedAt: "2026-01-02T12:00:01.000Z",
+    });
+    renderEditor();
     expect(screen.getByText("#frontend")).toBeInTheDocument();
+
     await userEvent.click(screen.getByRole("button", { name: /remove/i }));
-    expect(onRemoveTag).toHaveBeenCalledWith("1");
+
+    expect(mockedUpdateNoteRequest).toHaveBeenCalledWith("note-1", { tags: [] });
   });
 
-  it("adds a tag when typing in the input and pressing Enter", async () => {
-    const onAddTag = vi.fn();
-    renderEditor({ onAddTag });
+  it("adds a tag when typing in the input and pressing Enter, saving immediately", async () => {
+    mockedUpdateNoteRequest.mockResolvedValue({
+      id: "note-1",
+      title: "My Note",
+      content: "hello",
+      tags: ["frontend", "backend"],
+      createdAt: "2026-01-01T10:00:00.000Z",
+      updatedAt: "2026-01-02T12:00:01.000Z",
+    });
+    renderEditor();
     const input = screen.getByLabelText("Add tag");
     await userEvent.type(input, "backend{Enter}");
-    expect(onAddTag).toHaveBeenCalledWith("backend");
+
+    expect(mockedUpdateNoteRequest).toHaveBeenCalledWith("note-1", {
+      tags: ["frontend", "backend"],
+    });
     expect(input).toHaveValue("");
   });
 
   it("does not add a duplicate tag (case-insensitive) and shows an error toast instead", async () => {
-    const onAddTag = vi.fn();
     const errorSpy = vi.spyOn(toast, "error").mockImplementation(() => "toast-id");
-    renderEditor({ onAddTag, tags: [{ id: "1", name: "frontend" }] });
+    renderEditor({ tags: ["frontend"] });
 
     const input = screen.getByLabelText("Add tag");
     await userEvent.type(input, "Frontend{Enter}");
 
-    expect(onAddTag).not.toHaveBeenCalled();
+    expect(mockedUpdateNoteRequest).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(input).toHaveValue("");
   });
@@ -244,8 +261,6 @@ describe("NoteEditor", () => {
             onPreviewChange={vi.fn()}
             onDelete={vi.fn()}
             tags={[]}
-            onAddTag={vi.fn()}
-            onRemoveTag={vi.fn()}
             createdAt={new Date()}
             updatedAt={new Date()}
           />

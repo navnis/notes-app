@@ -1,8 +1,22 @@
-import type { CreateNoteInput, Note, UpdateNoteInput } from "@notes/shared";
+import type {
+  CreateNoteInput,
+  ListNotesParams,
+  ListNotesResponse,
+  Note,
+  UpdateNoteInput,
+} from "@notes/shared";
 import { apiFetch } from "@/lib/api";
 
-export function listNotesRequest(): Promise<Note[]> {
-  return apiFetch<Note[]>("/api/notes");
+export function listNotesRequest(params: ListNotesParams = {}): Promise<ListNotesResponse> {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.tag) query.set("tag", params.tag);
+  if (params.sort) query.set("sort", params.sort);
+  if (params.page) query.set("page", String(params.page));
+  if (params.limit) query.set("limit", String(params.limit));
+
+  const queryString = query.toString();
+  return apiFetch<ListNotesResponse>(`/api/notes${queryString ? `?${queryString}` : ""}`);
 }
 
 export function createNoteRequest(input: CreateNoteInput): Promise<Note> {
@@ -14,7 +28,7 @@ export function createNoteRequest(input: CreateNoteInput): Promise<Note> {
 
 export function updateNoteRequest(id: string, input: UpdateNoteInput): Promise<Note> {
   return apiFetch<Note>(`/api/notes/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(input),
   });
 }

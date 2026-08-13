@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import notesRouter from "./routes/notes.js";
 import authRouter from "./routes/auth.js";
+import tagsRouter from "./routes/tags.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -17,6 +18,7 @@ app.get("/", (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/notes", notesRouter);
+app.use("/api/tags", tagsRouter);
 
 app.use(errorHandler);
 

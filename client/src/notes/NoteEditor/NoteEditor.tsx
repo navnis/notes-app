@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Eye, Loader2, Pencil, Tag as TagIcon, Trash2 } from "lucide-react";
-import type { Note, Tag as TagData } from "@notes/shared";
+import type { Note } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Button, MarkdownEditor, Modal, Tag, toast } from "@/components";
 import { useUpdateNote } from "@/hooks/useNotes";
+import { tagsQueryKey } from "@/hooks/useTags";
 import { ApiError } from "@/lib/api";
 import { formatDateTime } from "./NoteEditor.utils";
 import { AUTOSAVE_DEBOUNCE_MS } from "./NoteEditor.constants";
@@ -11,7 +13,7 @@ import { AUTOSAVE_DEBOUNCE_MS } from "./NoteEditor.constants";
 type SaveStatus = "saved" | "saving" | "error";
 
 export interface NoteEditorProps {
-  /** The note currently being edited — autosave calls `PUT /api/notes/:id` against this. */
+  /** The note currently being edited — autosave calls `PATCH /api/notes/:id` against this. */
   noteId: string;
   /** Optional leading emoji shown before the title, e.g. "🚀". */
   emoji?: string;
@@ -21,12 +23,10 @@ export interface NoteEditorProps {
   onChange: (value: string) => void;
   preview: boolean;
   onPreviewChange: (preview: boolean) => void;
-  /** Fired after a successful autosave with the server's copy of the note (fresh `updatedAt`, etc). */
+  /** Fired after a successful autosave (title/content or tags) with the server's copy of the note (fresh `updatedAt`, etc). */
   onSaved?: (note: Note) => void;
   onDelete: () => void | Promise<void>;
-  tags: Pick<TagData, "id" | "name">[];
-  onAddTag: (name: string) => void;
-  onRemoveTag: (id: string) => void;
+  tags: string[];
   createdAt: string | Date;
   updatedAt: string | Date;
   className?: string;
@@ -44,8 +44,6 @@ export function NoteEditor({
   onSaved,
   onDelete,
   tags,
-  onAddTag,
-  onRemoveTag,
   createdAt,
   updatedAt,
   className,
@@ -55,6 +53,7 @@ export function NoteEditor({
   const [deleting, setDeleting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const updateNote = useUpdateNote();
+  const queryClient = useQueryClient();
   // Skips the very next autosave — set whenever `noteId` changes (switching
   // to a note, including the initial mount) so loading a note's existing
   // title/content isn't mistaken for a user edit.
@@ -95,16 +94,43 @@ export function NoteEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, value]);
 
+  // Tag add/remove save immediately (no debounce) — unlike title/content,
+  // each is already a single discrete action, not something the user is
+  // mid-way through typing.
+  const saveTags = (nextTags: string[]) => {
+    setSaveStatus("saving");
+    updateNote.mutate(
+      { id: noteId, input: { tags: nextTags } },
+      {
+        onSuccess: (note) => {
+          setSaveStatus("saved");
+          onSaved?.(note);
+          // The Sidebar's tag list (names + counts) is derived from all
+          // notes' tags — a change here can add/remove/reweight an entry.
+          queryClient.invalidateQueries({ queryKey: tagsQueryKey });
+        },
+        onError: (error) => {
+          setSaveStatus("error");
+          toast.error(error instanceof ApiError ? error.message : "Couldn't save your changes.");
+        },
+      },
+    );
+  };
+
   const handleAddTag = () => {
     const name = newTag.trim();
     if (!name) return;
-    if (tags.some((tag) => tag.name.toLowerCase() === name.toLowerCase())) {
+    if (tags.some((tag) => tag.toLowerCase() === name.toLowerCase())) {
       toast.error(`"${name}" is already tagged on this note`);
       setNewTag("");
       return;
     }
-    onAddTag(name);
+    saveTags([...tags, name]);
     setNewTag("");
+  };
+
+  const handleRemoveTag = (name: string) => {
+    saveTags(tags.filter((tag) => tag !== name));
   };
 
   const createdDate = typeof createdAt === "string" ? new Date(createdAt) : createdAt;
@@ -193,8 +219,8 @@ export function NoteEditor({
         <TagIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <div className="scrollbar-thin flex min-w-0 items-center gap-2 overflow-x-auto">
           {tags.map((tag) => (
-            <Tag key={tag.id} onRemove={() => onRemoveTag(tag.id)} className="shrink-0">
-              #{tag.name}
+            <Tag key={tag} onRemove={() => handleRemoveTag(tag)} className="shrink-0">
+              #{tag}
             </Tag>
           ))}
         </div>

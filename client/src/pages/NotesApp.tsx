@@ -1,21 +1,12 @@
-import { useEffect, useState } from "react";
-import type { Tag as TagData } from "@notes/shared";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { NoteSortField } from "@notes/shared";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
 import { Loading, toast } from "@/components";
 import { useNotes, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
+import { useTags, tagsQueryKey } from "@/hooks/useTags";
 import { ApiError } from "@/lib/api";
 import { toPreviewText } from "./NotesApp.utils";
-
-const SAMPLE_TAGS = [
-  { id: "1", name: "architecture", count: 1 },
-  { id: "2", name: "javascript", count: 1 },
-  { id: "3", name: "frontend", count: 1 },
-  { id: "4", name: "api", count: 1 },
-  { id: "5", name: "backend", count: 1 },
-  { id: "6", name: "db", count: 1 },
-  { id: "7", name: "roadmap", count: 1 },
-  { id: "8", name: "design", count: 1 },
-];
 
 interface NoteItem {
   id: string;
@@ -23,7 +14,7 @@ interface NoteItem {
   title: string;
   preview?: string;
   content: string;
-  tags: Pick<TagData, "id" | "name">[];
+  tags: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -31,47 +22,74 @@ interface NoteItem {
 // Temporary showcase for reviewing components as they're built.
 // Gets replaced with the real notes app shell.
 export function NotesApp() {
+  const [search, setSearch] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [notes, setNotes] = useState<NoteItem[]>([]);
+  const [sortBy, setSortBy] = useState<NoteSortField>("updatedAt");
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
-  const { data: fetchedNotes, isLoading, isError } = useNotes();
+  // The one note currently open may have edits the debounced autosave
+  // hasn't caught up to yet — kept as a small local overlay so a background
+  // page refetch (react-query refocus, pagination) can't clobber them.
+  const [noteOverlay, setNoteOverlay] = useState<NoteItem | null>(null);
+
+  const filters = useMemo(
+    () => ({ search, tag: selectedTagId, sort: sortBy }),
+    [search, selectedTagId, sortBy],
+  );
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useNotes(filters);
+  const { data: tags = [] } = useTags();
   const createNote = useCreateNote();
   const deleteNote = useDeleteNote();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!fetchedNotes) return;
-    setNotes((prev) =>
-      fetchedNotes.map((note) => {
-        // The selected note may have local edits the debounced autosave
-        // hasn't caught up to yet — a background refetch (e.g. window
-        // refocus) shouldn't clobber those with a possibly-older server copy.
-        if (note.id === selectedNoteId) {
-          const existing = prev.find((prevNote) => prevNote.id === note.id);
-          if (existing) return existing;
-        }
-        return { ...note, emoji: "📝", preview: toPreviewText(note.content), tags: [] };
-      }),
-    );
-    // Only the fetch result should re-run this merge — selectedNoteId is read,
-    // not reacted to, so switching notes doesn't re-trigger a merge itself.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchedNotes]);
+  const pages = useMemo(() => data?.pages ?? [], [data]);
+  const totalCount = pages[0]?.total ?? 0;
+  const notes: NoteItem[] = useMemo(
+    () =>
+      pages
+        .flatMap((page) => page.notes)
+        .map((note) =>
+          note.id === noteOverlay?.id
+            ? noteOverlay
+            : { ...note, emoji: "📝", preview: toPreviewText(note.content) },
+        ),
+    [pages, noteOverlay],
+  );
 
   useEffect(() => {
     if (isError) toast.error("Couldn't load your notes. Please try again.");
   }, [isError]);
+
+  // Loads the overlay fresh only when the selection itself changes (opening
+  // a different note, or closing one) — never on incidental re-fetches of
+  // `pages`, or the user's in-progress edits would get reset mid-typing.
+  useEffect(() => {
+    if (!selectedNoteId) {
+      setNoteOverlay(null);
+      return;
+    }
+    const found = pages.flatMap((page) => page.notes).find((note) => note.id === selectedNoteId);
+    if (found) {
+      setNoteOverlay({ ...found, emoji: "📝", preview: toPreviewText(found.content) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNoteId]);
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId);
 
   async function handleNewNote() {
     try {
       const note = await createNote.mutateAsync({ title: "Untitled Note", content: "" });
-      setNotes((prev) => [
-        { ...note, emoji: "📝", preview: toPreviewText(note.content), tags: [] },
-        ...prev,
-      ]);
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
       setSelectedNoteId(note.id);
+      setNoteOverlay({ ...note, emoji: "📝", preview: toPreviewText(note.content) });
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "Couldn't create the note. Please try again.";
       toast.error(message);
@@ -81,7 +99,8 @@ export function NotesApp() {
   async function handleDeleteNote(id: string) {
     try {
       await deleteNote.mutateAsync(id);
-      setNotes((prev) => prev.filter((note) => note.id !== id));
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: tagsQueryKey });
       setSelectedNoteId((prev) => (prev === id ? null : prev));
     } catch (error) {
       const message = error instanceof ApiError ? error.message : "Couldn't delete the note. Please try again.";
@@ -101,8 +120,8 @@ export function NotesApp() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
       <Sidebar
-        allNotesCount={notes.length}
-        tags={SAMPLE_TAGS}
+        allNotesCount={totalCount}
+        tags={tags}
         selectedTagId={selectedTagId}
         onTagSelect={setSelectedTagId}
         onNewNote={handleNewNote}
@@ -110,9 +129,17 @@ export function NotesApp() {
       <NoteList
         className="flex-[2]"
         notes={notes}
+        totalCount={totalCount}
         selectedNoteId={selectedNoteId}
         onSelectNote={setSelectedNoteId}
         onCreateNote={handleNewNote}
+        search={search}
+        onSearchChange={setSearch}
+        sortBy={sortBy}
+        onSortByChange={(value) => setSortBy(value as NoteSortField)}
+        hasMore={hasNextPage}
+        isFetchingMore={isFetchingNextPage}
+        onLoadMore={fetchNextPage}
       />
       {selectedNote && (
         <NoteEditor
@@ -120,49 +147,21 @@ export function NotesApp() {
           noteId={selectedNote.id}
           emoji={selectedNote.emoji}
           title={selectedNote.title}
-          onTitleChange={(title) =>
-            setNotes((prev) =>
-              prev.map((note) => (note.id === selectedNote.id ? { ...note, title } : note)),
-            )
-          }
+          onTitleChange={(title) => setNoteOverlay((prev) => (prev ? { ...prev, title } : prev))}
           value={selectedNote.content}
           onChange={(value) =>
-            setNotes((prev) =>
-              prev.map((note) =>
-                note.id === selectedNote.id
-                  ? { ...note, content: value, preview: toPreviewText(value) }
-                  : note,
-              ),
+            setNoteOverlay((prev) =>
+              prev ? { ...prev, content: value, preview: toPreviewText(value) } : prev,
             )
           }
           preview={preview}
           onPreviewChange={setPreview}
           onSaved={(saved) =>
-            setNotes((prev) =>
-              prev.map((note) =>
-                note.id === saved.id ? { ...note, updatedAt: saved.updatedAt } : note,
-              ),
+            setNoteOverlay((prev) =>
+              prev ? { ...prev, updatedAt: saved.updatedAt, tags: saved.tags } : prev,
             )
           }
           tags={selectedNote.tags}
-          onAddTag={(name) =>
-            setNotes((prev) =>
-              prev.map((note) =>
-                note.id === selectedNote.id
-                  ? { ...note, tags: [...note.tags, { id: crypto.randomUUID(), name, count: 1 }] }
-                  : note,
-              ),
-            )
-          }
-          onRemoveTag={(id) =>
-            setNotes((prev) =>
-              prev.map((note) =>
-                note.id === selectedNote.id
-                  ? { ...note, tags: note.tags.filter((tag) => tag.id !== id) }
-                  : note,
-              ),
-            )
-          }
           onDelete={() => handleDeleteNote(selectedNote.id)}
           createdAt={selectedNote.createdAt}
           updatedAt={selectedNote.updatedAt}
