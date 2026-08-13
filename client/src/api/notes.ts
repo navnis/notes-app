@@ -19,6 +19,10 @@ export function listNotesRequest(params: ListNotesParams = {}): Promise<ListNote
   return apiFetch<ListNotesResponse>(`/api/notes${queryString ? `?${queryString}` : ""}`);
 }
 
+export function getNoteRequest(id: string): Promise<Note> {
+  return apiFetch<Note>(`/api/notes/${id}`);
+}
+
 export function createNoteRequest(input: CreateNoteInput): Promise<Note> {
   return apiFetch<Note>("/api/notes", {
     method: "POST",

@@ -42,6 +42,13 @@ describe("Sidebar", () => {
     expect(onNewNote).toHaveBeenCalledTimes(1);
   });
 
+  // Cmd+N is reserved by the browser on Mac and never reaches page JS —
+  // only Ctrl+N is wired up, so the badge must say that, not ⌘N.
+  it("shows Ctrl+N as the New Note shortcut, not ⌘N", () => {
+    renderSidebar();
+    expect(screen.getByText("Ctrl+N")).toBeInTheDocument();
+  });
+
   it("selects a tag on click and deselects it on a second click", async () => {
     const onTagSelect = vi.fn();
     renderSidebar({ onTagSelect, selectedTagId: null });

@@ -82,9 +82,9 @@ On the client, I split things into three folders by responsibility rather than b
 
 - **Cookies over a bearer token.** I originally built this with the client reading the access token and attaching it to requests manually, which meant persisting it somewhere across reloads and decoding its expiry myself. Once the refresh token was already sitting in an httpOnly cookie for security reasons anyway, doing the same for the access token let me delete a fair amount of that client-side complexity. The trade-off is relying on `SameSite=Lax` and CORS config for CSRF protection instead of a token model — I think it's the right call here, but it's worth naming as a real choice, not a default.
 - **Mongo over SQLite.** More setup than the brief needed, chosen purely so the app survives redeploys once it's actually hosted somewhere.
-- **No `GET /notes/:id`.** The frontend never actually needs it — the list endpoint already returns full note content, and the editor gets a note as a prop rather than fetching it individually — so I didn't build it to avoid shipping dead code. That said, this is a real gap against the brief's documented API, and I've flagged it below rather than pretending it's not missing.
 - **Tags are just strings on the note**, not a separate collection. The brief's own response shape (`tags: ["string"]`) points that way, and it sidesteps a join for something that's genuinely simple. `GET /tags` computes distinct names and counts on read.
 - **Markdown over rich text**, as covered above — a simpler, lower-risk choice given the time available, and not a hard lock-in since content is just a string either way.
+- **The note list still ships full content, not a short preview.** The list endpoint returns each note's whole body today, which is fine at this data size but wouldn't scale forever — trimming it server-side to a preview and fetching full content only when a note is opened is a natural next step, not something I've done yet.
 
 ## How I tested this
 
@@ -97,11 +97,11 @@ On the client, I split things into three folders by responsibility rather than b
 Went through the brief line by line against what's actually built:
 
 **Backend**
-- [ ] `GET /notes/:id` isn't really implemented — there's a `GET /:id` in the router, but it's a leftover stub: no auth check, no ownership scoping, no input validation, no try/catch. It doesn't match how every other route in that file works and needs to either be fixed properly or removed.
-- [ ] Error responses aren't fully consistent yet — most routes share one error-handling helper, but that same stub route returns a different shape.
+
+Nothing outstanding here — every endpoint in the brief, including `GET /notes/:id`, is implemented, authenticated, and scoped to its owner the same way.
 
 **Frontend**
-- [ ] Keyboard shortcuts — not built at all (new note, jump to search, delete, etc. all still mouse-only).
+- [ ] Keyboard shortcuts are only partly there — `⌘N`/`Ctrl+N` for a new note and `/` to jump to search both work, but delete and a few other actions are still mouse-only.
 - [ ] Offline detection — not built. Nothing in the client currently checks `navigator.onLine` or reacts to connectivity loss.
 - [ ] Loading/empty/error states exist for the main note list (a spinner, an empty-state component, error toasts), but I haven't done a full pass checking every view handles all four states consistently.
 
@@ -116,5 +116,5 @@ Went through the brief line by line against what's actually built:
 
 - No forgot-password / reset flow — just register and login, on purpose.
 - No conflict handling across devices/tabs — last write wins, no version check on update.
-- `GET /notes/:id` is a stub with real bugs, not a finished endpoint (see above).
+- The note list sends full content over the wire rather than a trimmed preview (see trade-offs above).
 - Not deployed — local only for now.

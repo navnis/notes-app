@@ -1,4 +1,4 @@
-import type { HTMLAttributes, MouseEvent, ReactNode } from "react";
+import { memo, type HTMLAttributes, type MouseEvent, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { tagVariants } from "./Tag.variants";
@@ -17,7 +17,7 @@ export interface TagProps extends HTMLAttributes<HTMLElement> {
   removeLabel?: string;
 }
 
-export function Tag({
+export const Tag = memo(function Tag({
   children,
   count,
   selected,
@@ -73,4 +73,6 @@ export function Tag({
       {content}
     </span>
   );
-}
+});
+
+Tag.displayName = "Tag";
