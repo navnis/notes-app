@@ -4,6 +4,7 @@ import { Tag } from "@/components";
 import { formatRelativeTime, VISIBLE_TAG_COUNT } from "./NoteCard.utils";
 
 export interface NoteCardProps {
+  id: string;
   /** Optional leading emoji, e.g. "🚀". */
   emoji?: string;
   title: string;
@@ -14,11 +15,13 @@ export interface NoteCardProps {
   updatedAt: string | Date;
   /** Highlights the card as the currently-open note. */
   selected?: boolean;
-  onClick?: () => void;
+  /** Called with this card's id — lets the parent pass a stable callback instead of a per-card closure. */
+  onClick?: (id: string) => void;
   className?: string;
 }
 
 export const NoteCard = memo(function NoteCard({
+  id,
   emoji,
   title,
   preview,
@@ -35,7 +38,7 @@ export const NoteCard = memo(function NoteCard({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => onClick?.(id)}
       className={cn(
         "flex w-full flex-col gap-2 rounded-xl border-2 bg-card p-4 text-left shadow-sm transition-shadow cursor-pointer",
         selected ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:shadow-md",
