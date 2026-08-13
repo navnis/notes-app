@@ -3,7 +3,6 @@ import type { CookieOptions } from "express";
 export const ACCESS_TOKEN_COOKIE = "accessToken";
 export const REFRESH_TOKEN_COOKIE = "refreshToken";
 
-// Prod FE/BE are on different domains — SameSite=None is required for the
 // cookie to be sent on cross-site fetch calls, and None requires Secure.
 const isProduction = process.env.NODE_ENV === "production";
 
