@@ -49,13 +49,19 @@ router.get("/", requireAuth, async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
-  const note = await NoteModel.findById(req.params.id);
-  if (!note) {
-    res.status(404).json({ message: "Note not found" });
-    return;
+router.get("/:id", requireAuth, async (req, res) => {
+  try {
+    const note = await NoteModel.findOne({
+      _id: req.params.id,
+      userId: (req as AuthedRequest).userId,
+    });
+    if (!note) {
+      throw new AppError(404, "Note not found");
+    }
+    res.json(toNoteResponse(note));
+  } catch (error) {
+    handleRouteError(error, res, "Get note");
   }
-  res.json(note);
 });
 
 router.post("/", requireAuth, async (req, res) => {

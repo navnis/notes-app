@@ -43,7 +43,7 @@ export const Sidebar = memo(function Sidebar({
       <Button onClick={onNewNote} icon={<Plus className="size-4" />} className="w-full">
         <span className="flex-1 text-left">New Note</span>
         <kbd className="rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium">
-          ⌘N
+          Ctrl+N
         </kbd>
       </Button>
 
