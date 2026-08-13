@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NoteSortField } from "@notes/shared";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
-import { Loading, toast } from "@/components";
+import { toast } from "@/components";
 import { useNotes, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
 import { useTags, tagsQueryKey } from "@/hooks/useTags";
 import { ApiError } from "@/lib/api";
@@ -80,7 +80,26 @@ export function NotesApp() {
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId);
 
-  async function handleNewNote() {
+  const handleSortByChange = useCallback((value: string) => setSortBy(value as NoteSortField), []);
+
+  const handleTitleChange = useCallback(
+    (title: string) => setNoteOverlay((prev) => (prev ? { ...prev, title } : prev)),
+    [],
+  );
+
+  const handleContentChange = useCallback(
+    (value: string) =>
+      setNoteOverlay((prev) => (prev ? { ...prev, content: value, preview: toPreviewText(value) } : prev)),
+    [],
+  );
+
+  const handleNoteSaved = useCallback(
+    (saved: { updatedAt: string; tags: string[] }) =>
+      setNoteOverlay((prev) => (prev ? { ...prev, updatedAt: saved.updatedAt, tags: saved.tags } : prev)),
+    [],
+  );
+
+  const handleNewNote = useCallback(async () => {
     try {
       const note = await createNote.mutateAsync({ title: "Untitled Note", content: "" });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -90,28 +109,43 @@ export function NotesApp() {
       const message = error instanceof ApiError ? error.message : "Couldn't create the note. Please try again.";
       toast.error(message);
     }
-  }
+  }, [createNote, queryClient]);
 
-  async function handleDeleteNote(id: string) {
-    try {
-      await deleteNote.mutateAsync(id);
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: tagsQueryKey });
-      setSelectedNoteId((prev) => (prev === id ? null : prev));
-    } catch (error) {
-      const message = error instanceof ApiError ? error.message : "Couldn't delete the note. Please try again.";
-      toast.error(message);
-      throw error;
+  // Read via ref so the Ctrl+N listener below is only ever attached once.
+  // Cmd+N (not Ctrl+N) is reserved by the browser itself on Mac — it never
+  // reaches page JS, so only Ctrl+N is listened for, on every platform.
+  const handleNewNoteRef = useRef(handleNewNote);
+  handleNewNoteRef.current = handleNewNote;
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key.toLowerCase() !== "n" || !event.ctrlKey) return;
+      event.preventDefault();
+      handleNewNoteRef.current();
     }
-  }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full min-h-0 items-center justify-center p-4">
-        <Loading label="Loading notes..." />
-      </div>
-    );
-  }
+  const handleDeleteNote = useCallback(
+    async (id: string) => {
+      try {
+        await deleteNote.mutateAsync(id);
+        queryClient.invalidateQueries({ queryKey: ["notes"] });
+        queryClient.invalidateQueries({ queryKey: tagsQueryKey });
+        setSelectedNoteId((prev) => (prev === id ? null : prev));
+      } catch (error) {
+        const message = error instanceof ApiError ? error.message : "Couldn't delete the note. Please try again.";
+        toast.error(message);
+        throw error;
+      }
+    },
+    [deleteNote, queryClient],
+  );
+
+  const openNoteId = selectedNote?.id;
+  const handleDeleteSelectedNote = useCallback(() => {
+    return openNoteId ? handleDeleteNote(openNoteId) : undefined;
+  }, [openNoteId, handleDeleteNote]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
@@ -126,13 +160,14 @@ export function NotesApp() {
         className="flex-[2]"
         notes={notes}
         totalCount={totalCount}
+        isLoading={isLoading}
         selectedNoteId={selectedNoteId}
         onSelectNote={setSelectedNoteId}
         onCreateNote={handleNewNote}
         search={search}
         onSearchChange={setSearch}
         sortBy={sortBy}
-        onSortByChange={(value) => setSortBy(value as NoteSortField)}
+        onSortByChange={handleSortByChange}
         hasMore={hasNextPage}
         isFetchingMore={isFetchingNextPage}
         onLoadMore={fetchNextPage}
@@ -143,22 +178,14 @@ export function NotesApp() {
           noteId={selectedNote.id}
           emoji={selectedNote.emoji}
           title={selectedNote.title}
-          onTitleChange={(title) => setNoteOverlay((prev) => (prev ? { ...prev, title } : prev))}
+          onTitleChange={handleTitleChange}
           value={selectedNote.content}
-          onChange={(value) =>
-            setNoteOverlay((prev) =>
-              prev ? { ...prev, content: value, preview: toPreviewText(value) } : prev,
-            )
-          }
+          onChange={handleContentChange}
           preview={preview}
           onPreviewChange={setPreview}
-          onSaved={(saved) =>
-            setNoteOverlay((prev) =>
-              prev ? { ...prev, updatedAt: saved.updatedAt, tags: saved.tags } : prev,
-            )
-          }
+          onSaved={handleNoteSaved}
           tags={selectedNote.tags}
-          onDelete={() => handleDeleteNote(selectedNote.id)}
+          onDelete={handleDeleteSelectedNote}
           createdAt={selectedNote.createdAt}
           updatedAt={selectedNote.updatedAt}
         />

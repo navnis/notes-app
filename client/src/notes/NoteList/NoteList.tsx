@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, Search, SearchX } from "lucide-react";
-import { EmptyState, Input, NoteCard, Select } from "@/components";
+import { EmptyState, Input, Loading, NoteCard, Select } from "@/components";
 import { cn } from "@/lib/utils";
 import type { NoteListItem } from "./types";
 import { SEARCH_DEBOUNCE_MS, SORT_OPTIONS } from "./NoteList.constants";
@@ -9,6 +9,8 @@ export interface NoteListProps {
   notes: NoteListItem[];
   /** Total matching the current filters, from the server — not just notes.length (only the loaded page). */
   totalCount: number;
+  /** True while the current filters' results are (re)loading — scoped to just this column, not the whole page. */
+  isLoading?: boolean;
   selectedNoteId?: string | null;
   onSelectNote: (id: string) => void;
   /** Shown as the empty-state's action when there are no notes at all. */
@@ -23,9 +25,10 @@ export interface NoteListProps {
   className?: string;
 }
 
-export function NoteList({
+export const NoteList = memo(function NoteList({
   notes,
   totalCount,
+  isLoading,
   selectedNoteId,
   onSelectNote,
   onCreateNote,
@@ -113,7 +116,11 @@ export function NoteList({
         />
       </div>
 
-      {notes.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-1 items-center justify-center">
+          <Loading label="Loading notes..." />
+        </div>
+      ) : notes.length === 0 ? (
         totalCount === 0 && !search ? (
           <EmptyState
             icon={<FileText className="size-7" />}
@@ -136,13 +143,14 @@ export function NoteList({
           {notes.map((note) => (
             <NoteCard
               key={note.id}
+              id={note.id}
               emoji={note.emoji}
               title={note.title}
               preview={note.preview}
               tags={note.tags}
               updatedAt={note.updatedAt}
               selected={note.id === selectedNoteId}
-              onClick={() => onSelectNote(note.id)}
+              onClick={onSelectNote}
             />
           ))}
           {hasMore && (
@@ -156,4 +164,6 @@ export function NoteList({
       )}
     </div>
   );
-}
+});
+
+NoteList.displayName = "NoteList";

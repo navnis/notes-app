@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, CheckCircle2, Eye, Loader2, Pencil, Tag as TagIcon, Trash2 } from "lucide-react";
 import type { Note } from "@notes/shared";
@@ -32,7 +32,7 @@ export interface NoteEditorProps {
   className?: string;
 }
 
-export function NoteEditor({
+export const NoteEditor = memo(function NoteEditor({
   noteId,
   emoji,
   title,
@@ -267,4 +267,6 @@ export function NoteEditor({
       />
     </div>
   );
-}
+});
+
+NoteEditor.displayName = "NoteEditor";
