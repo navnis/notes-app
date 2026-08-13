@@ -1,5 +1,4 @@
 import { memo } from "react";
-import type { Tag as TagData } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Tag } from "@/components";
 import { formatRelativeTime, VISIBLE_TAG_COUNT } from "./NoteCard.utils";
@@ -10,7 +9,7 @@ export interface NoteCardProps {
   title: string;
   /** Short snippet of the note's content, truncated to two lines. */
   preview?: string;
-  tags: Pick<TagData, "id" | "name">[];
+  tags: string[];
   /** Accepts a raw ISO string (as stored/returned by the API) or a Date. */
   updatedAt: string | Date;
   /** Highlights the card as the currently-open note. */
@@ -53,7 +52,7 @@ export const NoteCard = memo(function NoteCard({
       <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
         <div className="flex min-w-0 items-center gap-1.5">
           {visibleTags.map((tag) => (
-            <Tag key={tag.id}>#{tag.name}</Tag>
+            <Tag key={tag}>#{tag}</Tag>
           ))}
           {hiddenCount > 0 && (
             <span className="text-xs text-muted-foreground">+{hiddenCount}</span>

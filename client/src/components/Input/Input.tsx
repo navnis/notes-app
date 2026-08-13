@@ -13,11 +13,24 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   /** For type="password" fields — renders a built-in show/hide toggle, state managed internally. */
   togglePasswordVisibility?: boolean;
+  /** Shows a red asterisk after the label, in addition to setting the native `required` attribute. */
+  required?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
-    { className, icon, trailing, error, label, id, togglePasswordVisibility, type, ...props },
+    {
+      className,
+      icon,
+      trailing,
+      error,
+      label,
+      id,
+      togglePasswordVisibility,
+      type,
+      required,
+      ...props
+    },
     ref,
   ) => {
     const generatedId = useId();
@@ -48,6 +61,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label htmlFor={inputId} className="text-sm font-medium text-foreground">
             {label}
+            {required && <span className="text-destructive"> *</span>}
           </label>
         )}
         <div className="relative flex items-center">
@@ -60,6 +74,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             type={effectiveType}
+            required={required}
             className={cn(
               "h-9 w-full appearance-none rounded-lg border bg-secondary px-3 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
               error ? "border-destructive" : "border-input",

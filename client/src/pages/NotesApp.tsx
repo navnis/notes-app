@@ -1,123 +1,164 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { NoteSortField } from "@notes/shared";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
+import { Loading, toast } from "@/components";
+import { useNotes, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
+import { useTags, tagsQueryKey } from "@/hooks/useTags";
+import { ApiError } from "@/lib/api";
+import { toPreviewText } from "./NotesApp.utils";
 
-const SAMPLE_TAGS = [
-  { id: "1", name: "architecture", count: 1 },
-  { id: "2", name: "javascript", count: 1 },
-  { id: "3", name: "frontend", count: 1 },
-  { id: "4", name: "api", count: 1 },
-  { id: "5", name: "backend", count: 1 },
-  { id: "6", name: "db", count: 1 },
-  { id: "7", name: "roadmap", count: 1 },
-  { id: "8", name: "design", count: 1 },
-];
-
-const INITIAL_NOTES = [
-  {
-    id: "1",
-    emoji: "🚀",
-    title: "Frontend Fundamentals & System Design",
-    preview:
-      "Frontend Architecture Guidelines When building modern web applications, state management and ...",
-    content:
-      "# Frontend Architecture Guidelines\n\nWhen building modern web applications, state management and data flow are paramount.\n\n- **Optimistic UI Updates**: Instantly reflect actions while syncing API calls.\n- **Debounced Input**: Prevent excessive search query requests.\n- **Accessibility**: Support keyboard shortcuts (`Ctrl+N`, `/`) and semantic HTML structure.",
-    tags: [SAMPLE_TAGS[0], SAMPLE_TAGS[1], SAMPLE_TAGS[2]],
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 20 * 60 * 1000),
-  },
-  {
-    id: "2",
-    emoji: "⚡",
-    title: "Backend API Spec & SQLite Schema",
-    preview: "REST API Endpoints Required | Method | Endpoint | Description | ... | GET | /notes | Support...",
-    content: "# REST API Endpoints\n\nRequired endpoints:\n\n- `GET /notes`\n- `POST /notes`\n- `DELETE /notes/:id`",
-    tags: [SAMPLE_TAGS[3], SAMPLE_TAGS[4], SAMPLE_TAGS[5]],
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-  },
-  {
-    id: "3",
-    emoji: "💡",
-    title: "Product Roadmap & UX Polish",
-    preview: "UX Roadmap Checklist [x] Responsive layout for mobile & desktop [x] Keyboard shortcuts moda...",
-    content: "# UX Roadmap Checklist\n\n- [x] Responsive layout for mobile & desktop\n- [x] Keyboard shortcuts modal",
-    tags: [SAMPLE_TAGS[6], SAMPLE_TAGS[7]],
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-  },
-];
+interface NoteItem {
+  id: string;
+  emoji?: string;
+  title: string;
+  preview?: string;
+  content: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 // Temporary showcase for reviewing components as they're built.
 // Gets replaced with the real notes app shell.
 export function NotesApp() {
-  const [activeView, setActiveView] = useState<"notes" | "trash">("notes");
+  const [search, setSearch] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [notes, setNotes] = useState(INITIAL_NOTES);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>("1");
+  const [sortBy, setSortBy] = useState<NoteSortField>("updatedAt");
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  // Local overlay for the open note so a background page refetch can't clobber unsaved edits.
+  const [noteOverlay, setNoteOverlay] = useState<NoteItem | null>(null);
+
+  const filters = useMemo(
+    () => ({ search, tag: selectedTagId, sort: sortBy }),
+    [search, selectedTagId, sortBy],
+  );
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useNotes(filters);
+  const { data: tags = [] } = useTags();
+  const createNote = useCreateNote();
+  const deleteNote = useDeleteNote();
+  const queryClient = useQueryClient();
+
+  const pages = useMemo(() => data?.pages ?? [], [data]);
+  const totalCount = pages[0]?.total ?? 0;
+  const notes: NoteItem[] = useMemo(
+    () =>
+      pages
+        .flatMap((page) => page.notes)
+        .map((note) =>
+          note.id === noteOverlay?.id
+            ? noteOverlay
+            : { ...note, emoji: "📝", preview: toPreviewText(note.content) },
+        ),
+    [pages, noteOverlay],
+  );
+
+  useEffect(() => {
+    if (isError) toast.error("Couldn't load your notes. Please try again.");
+  }, [isError]);
+
+  // Only re-syncs the overlay when the selection itself changes, not on incidental `pages` refetches.
+  useEffect(() => {
+    if (!selectedNoteId) {
+      setNoteOverlay(null);
+      return;
+    }
+    const found = pages.flatMap((page) => page.notes).find((note) => note.id === selectedNoteId);
+    if (found) {
+      setNoteOverlay({ ...found, emoji: "📝", preview: toPreviewText(found.content) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNoteId]);
 
   const selectedNote = notes.find((note) => note.id === selectedNoteId);
+
+  async function handleNewNote() {
+    try {
+      const note = await createNote.mutateAsync({ title: "Untitled Note", content: "" });
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      setSelectedNoteId(note.id);
+      setNoteOverlay({ ...note, emoji: "📝", preview: toPreviewText(note.content) });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Couldn't create the note. Please try again.";
+      toast.error(message);
+    }
+  }
+
+  async function handleDeleteNote(id: string) {
+    try {
+      await deleteNote.mutateAsync(id);
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: tagsQueryKey });
+      setSelectedNoteId((prev) => (prev === id ? null : prev));
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Couldn't delete the note. Please try again.";
+      toast.error(message);
+      throw error;
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full min-h-0 items-center justify-center p-4">
+        <Loading label="Loading notes..." />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
       <Sidebar
-        allNotesCount={notes.length}
-        trashCount={0}
-        activeView={activeView}
-        onViewChange={setActiveView}
-        tags={SAMPLE_TAGS}
+        allNotesCount={totalCount}
+        tags={tags}
         selectedTagId={selectedTagId}
         onTagSelect={setSelectedTagId}
-        onNewNote={() => console.log("new note")}
+        onNewNote={handleNewNote}
       />
       <NoteList
         className="flex-[2]"
         notes={notes}
+        totalCount={totalCount}
         selectedNoteId={selectedNoteId}
         onSelectNote={setSelectedNoteId}
+        onCreateNote={handleNewNote}
+        search={search}
+        onSearchChange={setSearch}
+        sortBy={sortBy}
+        onSortByChange={(value) => setSortBy(value as NoteSortField)}
+        hasMore={hasNextPage}
+        isFetchingMore={isFetchingNextPage}
+        onLoadMore={fetchNextPage}
       />
       {selectedNote && (
         <NoteEditor
           className="flex-[3]"
+          noteId={selectedNote.id}
           emoji={selectedNote.emoji}
           title={selectedNote.title}
-          onTitleChange={(title) =>
-            setNotes((prev) =>
-              prev.map((note) => (note.id === selectedNote.id ? { ...note, title } : note)),
-            )
-          }
+          onTitleChange={(title) => setNoteOverlay((prev) => (prev ? { ...prev, title } : prev))}
           value={selectedNote.content}
           onChange={(value) =>
-            setNotes((prev) =>
-              prev.map((note) => (note.id === selectedNote.id ? { ...note, content: value } : note)),
+            setNoteOverlay((prev) =>
+              prev ? { ...prev, content: value, preview: toPreviewText(value) } : prev,
             )
           }
           preview={preview}
           onPreviewChange={setPreview}
-          saved
+          onSaved={(saved) =>
+            setNoteOverlay((prev) =>
+              prev ? { ...prev, updatedAt: saved.updatedAt, tags: saved.tags } : prev,
+            )
+          }
           tags={selectedNote.tags}
-          onAddTag={(name) =>
-            setNotes((prev) =>
-              prev.map((note) =>
-                note.id === selectedNote.id
-                  ? { ...note, tags: [...note.tags, { id: crypto.randomUUID(), name, count: 1 }] }
-                  : note,
-              ),
-            )
-          }
-          onRemoveTag={(id) =>
-            setNotes((prev) =>
-              prev.map((note) =>
-                note.id === selectedNote.id
-                  ? { ...note, tags: note.tags.filter((tag) => tag.id !== id) }
-                  : note,
-              ),
-            )
-          }
-          onDelete={() => {
-            setNotes((prev) => prev.filter((note) => note.id !== selectedNote.id));
-            setSelectedNoteId(null);
-          }}
+          onDelete={() => handleDeleteNote(selectedNote.id)}
           createdAt={selectedNote.createdAt}
           updatedAt={selectedNote.updatedAt}
         />
