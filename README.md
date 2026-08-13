@@ -59,7 +59,7 @@ Vitest on both sides. Client: React Testing Library, a test file per component/h
 
 ## What's left
 
-- Keyboard shortcuts are partial — `Ctrl+N` (new note, not `⌘N` — that's reserved by the browser itself on Mac) and `/` (search) work; delete and a few other actions are still mouse-only.
+- Keyboard shortcuts are partial 
 - No offline detection (`navigator.onLine` or similar).
 - No forgot-password flow — register and login only, on purpose.
 - No conflict handling across devices/tabs — last write wins.
