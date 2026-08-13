@@ -101,7 +101,7 @@ Went through the brief line by line against what's actually built:
 Nothing outstanding here — every endpoint in the brief, including `GET /notes/:id`, is implemented, authenticated, and scoped to its owner the same way.
 
 **Frontend**
-- [ ] Keyboard shortcuts are only partly there — `⌘N`/`Ctrl+N` for a new note and `/` to jump to search both work, but delete and a few other actions are still mouse-only.
+- [ ] Keyboard shortcuts are only partly there — `Ctrl+N` for a new note (not `⌘N` — that combo is reserved by the browser itself on Mac and never reaches page JS) and `/` to jump to search both work, but delete and a few other actions are still mouse-only.
 - [ ] Offline detection — not built. Nothing in the client currently checks `navigator.onLine` or reacts to connectivity loss.
 - [ ] Loading/empty/error states exist for the main note list (a spinner, an empty-state component, error toasts), but I haven't done a full pass checking every view handles all four states consistently.
 
