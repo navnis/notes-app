@@ -68,8 +68,8 @@ export const NoteEditor = memo(function NoteEditor({
       return;
     }
 
-    setSaveStatus("saving");
     const timeout = setTimeout(() => {
+      setSaveStatus("saving");
       updateNote.mutate(
         { id: noteId, input: { title, content: value } },
         {

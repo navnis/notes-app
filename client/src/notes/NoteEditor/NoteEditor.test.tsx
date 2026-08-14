@@ -113,7 +113,8 @@ describe("NoteEditor", () => {
     const { rerenderEditor } = renderEditor({ onSaved });
 
     rerenderEditor({ onSaved, value: "new content" });
-    expect(screen.getByText("Saving…")).toBeInTheDocument();
+    // Saving… must not appear until the debounce elapses and the request actually starts.
+    expect(screen.queryByText("Saving…")).not.toBeInTheDocument();
     expect(mockedUpdateNoteRequest).not.toHaveBeenCalled();
 
     await act(async () => {
