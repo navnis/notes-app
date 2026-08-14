@@ -100,6 +100,7 @@ export function NotesApp() {
   );
 
   const handleNewNote = useCallback(async () => {
+    if (createNote.isPending) return;
     try {
       const note = await createNote.mutateAsync({ title: "Untitled Note", content: "" });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -155,6 +156,7 @@ export function NotesApp() {
         selectedTagId={selectedTagId}
         onTagSelect={setSelectedTagId}
         onNewNote={handleNewNote}
+        isCreatingNote={createNote.isPending}
       />
       <NoteList
         className="flex-[2]"

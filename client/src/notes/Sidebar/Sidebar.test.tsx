@@ -65,4 +65,12 @@ describe("Sidebar", () => {
     renderSidebar();
     expect(screen.getByRole("button", { name: /log out/i })).toBeInTheDocument();
   });
+
+  it("shows a loading spinner and hides the shortcut badge while creating a note", () => {
+    renderSidebar({ isCreatingNote: true });
+    const button = screen.getByRole("button", { name: /new note/i });
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toBeDisabled();
+    expect(screen.queryByText("Ctrl+N")).not.toBeInTheDocument();
+  });
 });

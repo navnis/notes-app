@@ -14,6 +14,7 @@ export interface SidebarProps {
   selectedTagId?: string | null;
   onTagSelect?: (id: string | null) => void;
   onNewNote: () => void;
+  isCreatingNote?: boolean;
   className?: string;
 }
 
@@ -24,6 +25,7 @@ export const Sidebar = memo(function Sidebar({
   selectedTagId,
   onTagSelect,
   onNewNote,
+  isCreatingNote,
   className,
 }: SidebarProps) {
   return (
@@ -40,11 +42,18 @@ export const Sidebar = memo(function Sidebar({
         <p className="text-base font-bold text-foreground">{appName}</p>
       </div>
 
-      <Button onClick={onNewNote} icon={<Plus className="size-4" />} className="w-full">
+      <Button
+        onClick={onNewNote}
+        icon={<Plus className="size-4" />}
+        loading={isCreatingNote}
+        className="w-full"
+      >
         <span className="flex-1 text-left">New Note</span>
-        <kbd className="rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium">
-          Ctrl+N
-        </kbd>
+        {!isCreatingNote && (
+          <kbd className="rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium">
+            Ctrl+N
+          </kbd>
+        )}
       </Button>
 
       <div className="flex flex-col gap-1">
