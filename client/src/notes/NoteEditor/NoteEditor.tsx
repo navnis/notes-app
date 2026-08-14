@@ -7,7 +7,7 @@ import { Button, MarkdownEditor, Modal, Tag, toast } from "@/components";
 import { useUpdateNote } from "@/hooks/useNotes";
 import { tagsQueryKey } from "@/hooks/useTags";
 import { ApiError } from "@/lib/api";
-import { formatDateTime } from "./NoteEditor.utils";
+import { formatDateTime, isValidTag } from "./NoteEditor.utils";
 import { AUTOSAVE_DEBOUNCE_MS } from "./NoteEditor.constants";
 
 type SaveStatus = "saved" | "saving" | "error";
@@ -114,6 +114,10 @@ export const NoteEditor = memo(function NoteEditor({
   const handleAddTag = () => {
     const name = newTag.trim();
     if (!name) return;
+    if (!isValidTag(name)) {
+      toast.error("Tags can only contain letters, numbers, and underscores — no spaces.");
+      return;
+    }
     if (tags.some((tag) => tag.toLowerCase() === name.toLowerCase())) {
       toast.error(`"${name}" is already tagged on this note`);
       setNewTag("");

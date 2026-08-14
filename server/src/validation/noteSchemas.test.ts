@@ -41,6 +41,19 @@ describe("createNoteSchema", () => {
     });
     expect(result.tags).toEqual(["Frontend", "API"]);
   });
+
+  it("rejects a tag containing a space", () => {
+    expect(() => createNoteSchema.parse({ title: "My note", tags: ["ice tag"] })).toThrow();
+  });
+
+  it("rejects a tag containing punctuation", () => {
+    expect(() => createNoteSchema.parse({ title: "My note", tags: ["c++"] })).toThrow();
+  });
+
+  it("allows unicode letters and underscores in a tag", () => {
+    const result = createNoteSchema.parse({ title: "My note", tags: ["café", "日本語", "my_tag"] });
+    expect(result.tags).toEqual(["café", "日本語", "my_tag"]);
+  });
 });
 
 describe("updateNoteSchema", () => {

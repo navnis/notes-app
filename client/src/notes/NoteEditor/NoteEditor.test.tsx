@@ -192,6 +192,18 @@ describe("NoteEditor", () => {
     expect(input).toHaveValue("");
   });
 
+  it("rejects a tag containing a space and keeps the input so it can be fixed", async () => {
+    const errorSpy = vi.spyOn(toast, "error").mockImplementation(() => "toast-id");
+    renderEditor();
+
+    const input = screen.getByLabelText("Add tag");
+    await userEvent.type(input, "ice tag{Enter}");
+
+    expect(mockedUpdateNoteRequest).not.toHaveBeenCalled();
+    expect(errorSpy).toHaveBeenCalledWith("Tags can only contain letters, numbers, and underscores — no spaces.");
+    expect(input).toHaveValue("ice tag");
+  });
+
   it("shows the created/updated timestamps", () => {
     renderEditor({
       createdAt: new Date("2026-01-01T10:00:00"),
