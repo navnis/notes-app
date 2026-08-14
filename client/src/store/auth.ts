@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 
 export interface AuthSession {
+  name: string;
   email: string;
 }
 

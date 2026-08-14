@@ -1,5 +1,11 @@
 const PREVIEW_MAX_LENGTH = 140;
 
+// "Rahul Sharma" -> "Rahul's Notes" — just the first name, for the sidebar header.
+export function toPossessiveAppName(name: string): string {
+  const firstName = name.trim().split(/\s+/)[0];
+  return firstName ? `${firstName}'s Notes` : "Notes";
+}
+
 // Strips the most common Markdown syntax down to plain text for the note
 // list's preview line — doesn't need to be exhaustive, just readable.
 export function toPreviewText(content: string): string {

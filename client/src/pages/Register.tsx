@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 export function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,7 +17,7 @@ export function Register() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    const validationErrors = validateRegisterForm(email, password, confirmPassword);
+    const validationErrors = validateRegisterForm(name, email, password, confirmPassword);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -25,7 +26,7 @@ export function Register() {
     setErrors({});
     setLoading(true);
     try {
-      await register(email, password, confirmPassword);
+      await register(name, email, password, confirmPassword);
       navigate("/", { replace: true });
     } catch (error) {
       setErrors({ form: error instanceof Error ? error.message : "Something went wrong." });
@@ -47,6 +48,15 @@ export function Register() {
       }
     >
       <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        <Input
+          label="Name"
+          type="text"
+          autoComplete="name"
+          required
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          error={errors.name}
+        />
         <Input
           label="Email"
           type="email"

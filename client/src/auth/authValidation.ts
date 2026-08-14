@@ -13,6 +13,7 @@ export function validateLoginForm(email: string, password: string): LoginFormErr
 }
 
 export interface RegisterFormErrors {
+  name?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -21,11 +22,14 @@ export interface RegisterFormErrors {
 }
 
 export function validateRegisterForm(
+  name: string,
   email: string,
   password: string,
   confirmPassword: string,
 ): RegisterFormErrors {
   const errors: RegisterFormErrors = {};
+
+  if (!name.trim()) errors.name = "Name is required.";
 
   if (!email) errors.email = "Email is required.";
 

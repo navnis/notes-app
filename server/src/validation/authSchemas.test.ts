@@ -4,6 +4,7 @@ import { loginSchema, registerSchema } from "./authSchemas.js";
 describe("registerSchema", () => {
   it("accepts a valid registration and normalizes the email", () => {
     const result = registerSchema.parse({
+      name: "Rahul",
       email: "  User@Example.com  ",
       password: "password123",
       confirmPassword: "password123",
@@ -11,9 +12,31 @@ describe("registerSchema", () => {
     expect(result.email).toBe("user@example.com");
   });
 
+  it("rejects a missing name", () => {
+    expect(() =>
+      registerSchema.parse({
+        email: "user@example.com",
+        password: "password123",
+        confirmPassword: "password123",
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a name that is only whitespace", () => {
+    expect(() =>
+      registerSchema.parse({
+        name: "   ",
+        email: "user@example.com",
+        password: "password123",
+        confirmPassword: "password123",
+      }),
+    ).toThrow();
+  });
+
   it("rejects an invalid email", () => {
     expect(() =>
       registerSchema.parse({
+        name: "Rahul",
         email: "not-an-email",
         password: "password123",
         confirmPassword: "password123",
@@ -24,6 +47,7 @@ describe("registerSchema", () => {
   it("rejects a password shorter than 8 characters", () => {
     expect(() =>
       registerSchema.parse({
+        name: "Rahul",
         email: "user@example.com",
         password: "short",
         confirmPassword: "short",
@@ -34,6 +58,7 @@ describe("registerSchema", () => {
   it("rejects mismatched passwords", () => {
     expect(() =>
       registerSchema.parse({
+        name: "Rahul",
         email: "user@example.com",
         password: "password123",
         confirmPassword: "password456",

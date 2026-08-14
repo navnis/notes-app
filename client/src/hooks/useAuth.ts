@@ -12,16 +12,16 @@ export function useAuth() {
   async function login(email: string, password: string) {
     try {
       const { user } = await loginRequest(email, password);
-      setSession({ email: user.email });
+      setSession({ name: user.name, email: user.email });
     } catch (error) {
       throw error instanceof ApiError ? error : new Error("Something went wrong. Please try again.");
     }
   }
 
-  async function register(email: string, password: string, confirmPassword: string) {
+  async function register(name: string, email: string, password: string, confirmPassword: string) {
     try {
-      const { user } = await registerRequest(email, password, confirmPassword);
-      setSession({ email: user.email });
+      const { user } = await registerRequest(name, email, password, confirmPassword);
+      setSession({ name: user.name, email: user.email });
     } catch (error) {
       throw error instanceof ApiError ? error : new Error("Something went wrong. Please try again.");
     }
@@ -40,11 +40,11 @@ export function useAuth() {
   const restoreSession = useCallback(async () => {
     try {
       const { user } = await meRequest();
-      setSession({ email: user.email });
+      setSession({ name: user.name, email: user.email });
     } catch {
       try {
         const { user } = await refreshRequest();
-        setSession({ email: user.email });
+        setSession({ name: user.name, email: user.email });
       } catch {
         setSession(null);
       }
@@ -56,6 +56,7 @@ export function useAuth() {
   return {
     isAuthenticated: session !== null,
     isSessionRestored,
+    name: session?.name ?? null,
     email: session?.email ?? null,
     login,
     register,

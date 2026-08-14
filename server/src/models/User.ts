@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 
 export interface User {
+  name: string;
   email: string;
   passwordHash: string;
   // Hash of the current valid refresh token, so a stolen/reused one can be
@@ -12,6 +13,7 @@ export interface User {
 
 const userSchema = new Schema<User>(
   {
+    name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true },
     refreshTokenHash: { type: String, default: null },

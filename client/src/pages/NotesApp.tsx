@@ -5,8 +5,9 @@ import { Sidebar, NoteList, NoteEditor } from "@/notes";
 import { toast } from "@/components";
 import { useNotes, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
 import { useTags, tagsQueryKey } from "@/hooks/useTags";
+import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/api";
-import { toPreviewText } from "./NotesApp.utils";
+import { toPreviewText, toPossessiveAppName } from "./NotesApp.utils";
 
 interface NoteItem {
   id: string;
@@ -46,6 +47,8 @@ export function NotesApp() {
   const createNote = useCreateNote();
   const deleteNote = useDeleteNote();
   const queryClient = useQueryClient();
+  const { name } = useAuth();
+  const appName = useMemo(() => (name ? toPossessiveAppName(name) : "Notes"), [name]);
 
   const pages = useMemo(() => data?.pages ?? [], [data]);
   const totalCount = pages[0]?.total ?? 0;
@@ -151,6 +154,7 @@ export function NotesApp() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
       <Sidebar
+        appName={appName}
         allNotesCount={totalCount}
         tags={tags}
         selectedTagId={selectedTagId}

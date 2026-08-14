@@ -28,28 +28,30 @@ function renderUseAuth() {
 
 describe("useAuth restoreSession", () => {
   it("restores the session from a still-valid access-token cookie via /me, without falling back to /refresh", async () => {
-    mockedMeRequest.mockResolvedValueOnce({ user: { id: "1", email: "user@example.com" } });
+    mockedMeRequest.mockResolvedValueOnce({ user: { id: "1", name: "Rahul", email: "user@example.com" } });
     const { store, result } = renderUseAuth();
 
     await act(async () => {
       await result.current.restoreSession();
     });
 
-    expect(store.get(authAtom)).toEqual({ email: "user@example.com" });
+    expect(store.get(authAtom)).toEqual({ name: "Rahul", email: "user@example.com" });
     expect(store.get(sessionRestoredAtom)).toBe(true);
     expect(mockedRefreshRequest).not.toHaveBeenCalled();
   });
 
   it("falls back to /refresh when the access-token cookie is expired or missing", async () => {
     mockedMeRequest.mockRejectedValueOnce(new Error("no access token"));
-    mockedRefreshRequest.mockResolvedValueOnce({ user: { id: "1", email: "user@example.com" } });
+    mockedRefreshRequest.mockResolvedValueOnce({
+      user: { id: "1", name: "Rahul", email: "user@example.com" },
+    });
     const { store, result } = renderUseAuth();
 
     await act(async () => {
       await result.current.restoreSession();
     });
 
-    expect(store.get(authAtom)).toEqual({ email: "user@example.com" });
+    expect(store.get(authAtom)).toEqual({ name: "Rahul", email: "user@example.com" });
     expect(store.get(sessionRestoredAtom)).toBe(true);
   });
 

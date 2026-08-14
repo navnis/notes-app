@@ -17,7 +17,7 @@ const mockedLogoutRequest = vi.mocked(logoutRequest);
 
 function renderLogoutButton() {
   const store = createStore();
-  store.set(authAtom, { email: "user@example.com" });
+  store.set(authAtom, { name: "Rahul", email: "user@example.com" });
 
   render(
     <Provider store={store}>

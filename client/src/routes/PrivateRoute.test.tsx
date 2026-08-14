@@ -40,7 +40,7 @@ describe("PrivateRoute", () => {
   it("renders the protected route once restored, if authenticated", () => {
     const store = createStore();
     store.set(sessionRestoredAtom, true);
-    store.set(authAtom, { email: "user@example.com" });
+    store.set(authAtom, { name: "Rahul", email: "user@example.com" });
     renderPrivateRoute(store);
 
     expect(screen.getByText("Protected content")).toBeInTheDocument();

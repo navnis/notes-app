@@ -38,6 +38,7 @@ describe("Register", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
 
+    expect(screen.getByText("Name is required.")).toBeInTheDocument();
     expect(screen.getByText("Email is required.")).toBeInTheDocument();
     expect(screen.getByText("Password is required.")).toBeInTheDocument();
     expect(screen.getByText("Please confirm your password.")).toBeInTheDocument();
@@ -47,6 +48,7 @@ describe("Register", () => {
   it("shows an error when the password is too short", async () => {
     renderRegister();
 
+    await userEvent.type(screen.getByLabelText("Name *"), "Rahul");
     await userEvent.type(screen.getByLabelText("Email *"), "user@example.com");
     await userEvent.type(screen.getByLabelText("Password *"), "short");
     await userEvent.type(screen.getByLabelText("Confirm password *"), "short");
@@ -58,6 +60,7 @@ describe("Register", () => {
   it("shows an error when passwords don't match", async () => {
     renderRegister();
 
+    await userEvent.type(screen.getByLabelText("Name *"), "Rahul");
     await userEvent.type(screen.getByLabelText("Email *"), "user@example.com");
     await userEvent.type(screen.getByLabelText("Password *"), "password123");
     await userEvent.type(screen.getByLabelText("Confirm password *"), "password456");
@@ -68,17 +71,18 @@ describe("Register", () => {
 
   it("registers and redirects to the home page on valid submit", async () => {
     mockedRegisterRequest.mockResolvedValueOnce({
-      user: { id: "1", email: "user@example.com" },
+      user: { id: "1", name: "Rahul", email: "user@example.com" },
     });
     const { store } = renderRegister();
 
+    await userEvent.type(screen.getByLabelText("Name *"), "Rahul");
     await userEvent.type(screen.getByLabelText("Email *"), "user@example.com");
     await userEvent.type(screen.getByLabelText("Password *"), "password123");
     await userEvent.type(screen.getByLabelText("Confirm password *"), "password123");
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(await screen.findByText("Home page")).toBeInTheDocument();
-    expect(store.get(authAtom)).toEqual({ email: "user@example.com" });
+    expect(store.get(authAtom)).toEqual({ name: "Rahul", email: "user@example.com" });
   });
 
   it("shows the server's error message when the email is already taken", async () => {
@@ -87,6 +91,7 @@ describe("Register", () => {
     );
     renderRegister();
 
+    await userEvent.type(screen.getByLabelText("Name *"), "Rahul");
     await userEvent.type(screen.getByLabelText("Email *"), "user@example.com");
     await userEvent.type(screen.getByLabelText("Password *"), "password123");
     await userEvent.type(screen.getByLabelText("Confirm password *"), "password123");

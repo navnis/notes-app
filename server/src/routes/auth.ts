@@ -36,7 +36,7 @@ function clearAuthCookies(res: Response) {
 
 router.post("/register", async (req, res) => {
   try {
-    const { email, password } = registerSchema.parse(req.body);
+    const { name, email, password } = registerSchema.parse(req.body);
 
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
@@ -44,10 +44,10 @@ router.post("/register", async (req, res) => {
     }
 
     const passwordHash = await hashPassword(password);
-    const user = await UserModel.create({ email, passwordHash });
+    const user = await UserModel.create({ name, email, passwordHash });
 
     await issueTokens(res, user);
-    res.status(201).json({ user: { id: user.id, email: user.email } });
+    res.status(201).json({ user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
     handleRouteError(error, res, "Register");
   }
@@ -63,7 +63,7 @@ router.post("/login", async (req, res) => {
     }
 
     await issueTokens(res, user);
-    res.json({ user: { id: user.id, email: user.email } });
+    res.json({ user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
     handleRouteError(error, res, "Login");
   }
@@ -83,7 +83,7 @@ router.post("/refresh", async (req, res) => {
     }
 
     await issueTokens(res, user);
-    res.json({ user: { id: user.id, email: user.email } });
+    res.json({ user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
     clearAuthCookies(res);
     if (error instanceof AppError) {
@@ -120,7 +120,7 @@ router.get("/me", requireAuth, async (req, res) => {
     if (!user) {
       throw new AppError(401, "Not authenticated.");
     }
-    res.json({ user: { id: user.id, email: user.email } });
+    res.json({ user: { id: user.id, name: user.name, email: user.email } });
   } catch (error) {
     handleRouteError(error, res, "Fetching current user");
   }

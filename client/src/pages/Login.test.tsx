@@ -45,7 +45,7 @@ describe("Login", () => {
 
   it("logs in and redirects to the home page on valid submit", async () => {
     mockedLoginRequest.mockResolvedValueOnce({
-      user: { id: "1", email: "user@example.com" },
+      user: { id: "1", name: "Rahul", email: "user@example.com" },
     });
     const { store } = renderLogin();
 
@@ -54,7 +54,7 @@ describe("Login", () => {
     await userEvent.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByText("Home page")).toBeInTheDocument();
-    expect(store.get(authAtom)).toEqual({ email: "user@example.com" });
+    expect(store.get(authAtom)).toEqual({ name: "Rahul", email: "user@example.com" });
   });
 
   it("shows the server's error message and stays on the page when login fails", async () => {

@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 
 export interface AuthUser {
   id: string;
+  name: string;
   email: string;
 }
 
@@ -10,13 +11,14 @@ export interface AuthResponse {
 }
 
 export function registerRequest(
+  name: string,
   email: string,
   password: string,
   confirmPassword: string,
 ): Promise<AuthResponse> {
   return apiFetch<AuthResponse>("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password, confirmPassword }),
+    body: JSON.stringify({ name, email, password, confirmPassword }),
   });
 }
 
