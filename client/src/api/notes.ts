@@ -11,6 +11,7 @@ export function listNotesRequest(params: ListNotesParams = {}): Promise<ListNote
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.tag) query.set("tag", params.tag);
+  if (params.view) query.set("view", params.view);
   if (params.sort) query.set("sort", params.sort);
   if (params.page) query.set("page", String(params.page));
   if (params.limit) query.set("limit", String(params.limit));

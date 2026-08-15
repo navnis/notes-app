@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 @theme {
+  /* Below this, the 3-column notes layout (Sidebar/NoteList/NoteEditor) doesn't have
+     room and gets cramped — stays stacked until there's actually space for all three. */
+  --breakpoint-notes: 1050px;
+
   --color-bg: #eff5fa;
   --color-surface: #ffffff;
   --color-surface-2: #f4f9fc;

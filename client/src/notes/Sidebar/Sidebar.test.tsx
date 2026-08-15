@@ -16,7 +16,14 @@ const TAGS = [
 function renderSidebar(overrides: Partial<React.ComponentProps<typeof Sidebar>> = {}) {
   return render(
     <MemoryRouter>
-      <Sidebar allNotesCount={3} tags={TAGS} onNewNote={vi.fn()} {...overrides} />
+      <Sidebar
+        allNotesCount={3}
+        favoritesCount={0}
+        pinnedCount={0}
+        tags={TAGS}
+        onNewNote={vi.fn()}
+        {...overrides}
+      />
     </MemoryRouter>,
   );
 }
@@ -72,5 +79,31 @@ describe("Sidebar", () => {
     expect(button).toHaveAttribute("aria-busy", "true");
     expect(button).toBeDisabled();
     expect(screen.queryByText("Ctrl+N")).not.toBeInTheDocument();
+  });
+
+  it("shows Favorites and Pinned rows with their counts, All Notes active by default", () => {
+    renderSidebar({ favoritesCount: 2, pinnedCount: 5 });
+    expect(screen.getByRole("button", { name: /All Notes/ })).toHaveTextContent("3");
+    expect(screen.getByRole("button", { name: /Favorites/ })).toHaveTextContent("2");
+    expect(screen.getByRole("button", { name: /Pinned/ })).toHaveTextContent("5");
+  });
+
+  it("selects a view on click and clicking it again returns to All Notes", async () => {
+    const onViewSelect = vi.fn();
+    renderSidebar({ onViewSelect, activeView: null });
+    await userEvent.click(screen.getByRole("button", { name: /Favorites/ }));
+    expect(onViewSelect).toHaveBeenCalledWith("favorites");
+
+    onViewSelect.mockClear();
+    renderSidebar({ onViewSelect, activeView: "favorites" });
+    await userEvent.click(screen.getAllByRole("button", { name: /Favorites/ })[1]);
+    expect(onViewSelect).toHaveBeenCalledWith(null);
+  });
+
+  it("clicking All Notes clears the active view", async () => {
+    const onViewSelect = vi.fn();
+    renderSidebar({ onViewSelect, activeView: "pinned" });
+    await userEvent.click(screen.getByRole("button", { name: /All Notes/ }));
+    expect(onViewSelect).toHaveBeenCalledWith(null);
   });
 });

@@ -1,6 +1,16 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle2, Eye, Loader2, Pencil, Tag as TagIcon, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  Loader2,
+  Pencil,
+  Pin,
+  Star,
+  Tag as TagIcon,
+  Trash2,
+} from "lucide-react";
 import type { Note } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Button, MarkdownEditor, Modal, Tag, toast } from "@/components";
@@ -27,6 +37,13 @@ export interface NoteEditorProps {
   onSaved?: (note: Note) => void;
   onDelete: () => void | Promise<void>;
   tags: string[];
+  isFavorite?: boolean;
+  isPinned?: boolean;
+  /** Fired synchronously the instant a pin/favorite toggle is clicked, before the request —
+   * lets the parent apply an optimistic update (e.g. reordering pinned notes) right away. */
+  onToggleFieldOptimistic?: (field: "isFavorite" | "isPinned", nextValue: boolean) => void;
+  /** Fired if that request ultimately fails, so the parent can revert the optimistic update. */
+  onToggleFieldError?: (field: "isFavorite" | "isPinned", revertedValue: boolean) => void;
   createdAt: string | Date;
   updatedAt: string | Date;
   className?: string;
@@ -44,6 +61,10 @@ export const NoteEditor = memo(function NoteEditor({
   onSaved,
   onDelete,
   tags,
+  isFavorite,
+  isPinned,
+  onToggleFieldOptimistic,
+  onToggleFieldError,
   createdAt,
   updatedAt,
   className,
@@ -111,6 +132,28 @@ export const NoteEditor = memo(function NoteEditor({
     );
   };
 
+  // Favorite/pin toggle immediately, no debounce — same as tags, each click is already a discrete action.
+  // Fires the optimistic callback synchronously before the request, and the error callback (with the
+  // reverted value) if it fails, so the parent can optimistically reorder the list and roll back cleanly.
+  const toggleField = (field: "isFavorite" | "isPinned", nextValue: boolean) => {
+    setSaveStatus("saving");
+    onToggleFieldOptimistic?.(field, nextValue);
+    updateNote.mutate(
+      { id: noteId, input: { [field]: nextValue } },
+      {
+        onSuccess: (note) => {
+          setSaveStatus("saved");
+          onSaved?.(note);
+        },
+        onError: (error) => {
+          setSaveStatus("error");
+          toast.error(error instanceof ApiError ? error.message : "Couldn't save your changes.");
+          onToggleFieldError?.(field, !nextValue);
+        },
+      },
+    );
+  };
+
   const handleAddTag = () => {
     const name = newTag.trim();
     if (!name) return;
@@ -137,7 +180,7 @@ export const NoteEditor = memo(function NoteEditor({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 min-w-0 flex-col gap-4 rounded-lg bg-card p-4 shadow-sm",
+        "flex min-h-0 min-w-0 flex-col gap-4 rounded-lg bg-card p-4 shadow-sm notes:h-full",
         className,
       )}
     >
@@ -187,14 +230,36 @@ export const NoteEditor = memo(function NoteEditor({
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Delete note"
-          onClick={() => setConfirmingDelete(true)}
-        >
-          <Trash2 className="size-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={isPinned ? "Unpin note" : "Pin note"}
+            aria-pressed={isPinned}
+            onClick={() => toggleField("isPinned", !isPinned)}
+            className={isPinned ? "text-primary" : undefined}
+          >
+            <Pin className="size-4" fill={isPinned ? "currentColor" : "none"} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-pressed={isFavorite}
+            onClick={() => toggleField("isFavorite", !isFavorite)}
+            className={isFavorite ? "text-amber-500" : undefined}
+          >
+            <Star className="size-4" fill={isFavorite ? "currentColor" : "none"} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Delete note"
+            onClick={() => setConfirmingDelete(true)}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

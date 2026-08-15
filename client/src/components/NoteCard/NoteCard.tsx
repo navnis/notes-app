@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Pin, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tag } from "@/components";
 import { formatRelativeTime, VISIBLE_TAG_COUNT } from "./NoteCard.utils";
@@ -11,6 +12,9 @@ export interface NoteCardProps {
   /** Short snippet of the note's content, truncated to two lines. */
   preview?: string;
   tags: string[];
+  /** Display-only — pin/favorite can only be toggled from NoteEditor, not from the card. */
+  isFavorite?: boolean;
+  isPinned?: boolean;
   /** Accepts a raw ISO string (as stored/returned by the API) or a Date. */
   updatedAt: string | Date;
   /** Highlights the card as the currently-open note. */
@@ -26,6 +30,8 @@ export const NoteCard = memo(function NoteCard({
   title,
   preview,
   tags,
+  isFavorite,
+  isPinned,
   updatedAt,
   selected,
   onClick,
@@ -45,10 +51,27 @@ export const NoteCard = memo(function NoteCard({
         className,
       )}
     >
-      <h3 className="flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
-        {emoji && <span aria-hidden="true">{emoji}</span>}
-        <span className="truncate">{title}</span>
-      </h3>
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <h3 className="flex min-w-0 items-center gap-1.5 font-semibold text-foreground">
+          {emoji && <span aria-hidden="true">{emoji}</span>}
+          <span className="truncate">{title}</span>
+        </h3>
+        {(isPinned || isFavorite) && (
+          <div className="flex shrink-0 items-center gap-1">
+            {isPinned && (
+              <Pin className="size-3.5 text-primary" fill="currentColor" role="img" aria-label="Pinned" />
+            )}
+            {isFavorite && (
+              <Star
+                className="size-3.5 text-amber-500"
+                fill="currentColor"
+                role="img"
+                aria-label="Favorited"
+              />
+            )}
+          </div>
+        )}
+      </div>
 
       {preview && <p className="line-clamp-2 text-sm text-muted-foreground">{preview}</p>}
 

@@ -48,4 +48,34 @@ describe("NoteCard", () => {
     render(<NoteCard id="note-1" title="Note" tags={[]} updatedAt={isoString} />);
     expect(screen.getByText("1h ago")).toBeInTheDocument();
   });
+
+  // Pin/favorite can only be toggled from NoteEditor — the card just displays the state.
+  it("does not show pin/favorite indicators when neither is set", () => {
+    render(<NoteCard id="note-1" title="Note" tags={[]} updatedAt={new Date()} />);
+    expect(screen.queryByLabelText("Pinned")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Favorited")).not.toBeInTheDocument();
+  });
+
+  it("shows a pin/favorite indicator when set, with no click handler on either", () => {
+    render(<NoteCard id="note-1" title="Note" tags={[]} updatedAt={new Date()} isFavorite isPinned />);
+    expect(screen.getByLabelText("Pinned")).toBeInTheDocument();
+    expect(screen.getByLabelText("Favorited")).toBeInTheDocument();
+  });
+
+  it("still calls onClick when clicking the card even with indicators showing", async () => {
+    const onClick = vi.fn();
+    render(
+      <NoteCard
+        id="note-1"
+        title="Note"
+        tags={[]}
+        updatedAt={new Date()}
+        isFavorite
+        isPinned
+        onClick={onClick}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /Note/ }));
+    expect(onClick).toHaveBeenCalledWith("note-1");
+  });
 });

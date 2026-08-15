@@ -49,6 +49,15 @@ describe("NoteList", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 
+  it("defaults the heading to All Notes, and reflects the active view when given one", () => {
+    const { rerender } = renderList();
+    expect(screen.getByText("All Notes")).toBeInTheDocument();
+
+    rerender(<NoteList {...BASE_PROPS} heading="Pinned" />);
+    expect(screen.getByText("Pinned")).toBeInTheDocument();
+    expect(screen.queryByText("All Notes")).not.toBeInTheDocument();
+  });
+
   it("reports the debounced search value via onSearchChange", async () => {
     vi.useFakeTimers();
     const onSearchChange = vi.fn();

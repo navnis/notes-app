@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { useState } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -106,6 +106,9 @@ describe("NoteEditor", () => {
       title: "My Note",
       content: "new content",
       tags: [],
+      isFavorite: false,
+      isPinned: false,
+      pinnedAt: null,
       createdAt: "2026-01-01T10:00:00.000Z",
       updatedAt: "2026-01-03T09:00:00.000Z",
     });
@@ -150,6 +153,9 @@ describe("NoteEditor", () => {
       title: "My Note",
       content: "hello",
       tags: [],
+      isFavorite: false,
+      isPinned: false,
+      pinnedAt: null,
       createdAt: "2026-01-01T10:00:00.000Z",
       updatedAt: "2026-01-02T12:00:01.000Z",
     });
@@ -167,6 +173,9 @@ describe("NoteEditor", () => {
       title: "My Note",
       content: "hello",
       tags: ["frontend", "backend"],
+      isFavorite: false,
+      isPinned: false,
+      pinnedAt: null,
       createdAt: "2026-01-01T10:00:00.000Z",
       updatedAt: "2026-01-02T12:00:01.000Z",
     });
@@ -202,6 +211,71 @@ describe("NoteEditor", () => {
     expect(mockedUpdateNoteRequest).not.toHaveBeenCalled();
     expect(errorSpy).toHaveBeenCalledWith("Tags can only contain letters, numbers, and underscores — no spaces.");
     expect(input).toHaveValue("ice tag");
+  });
+
+  it("toggles pin and favorite immediately, without a debounce", async () => {
+    mockedUpdateNoteRequest.mockResolvedValue({
+      id: "note-1",
+      title: "My Note",
+      content: "hello",
+      tags: TAGS,
+      isFavorite: true,
+      isPinned: false,
+      pinnedAt: null,
+      createdAt: "2026-01-01T10:00:00.000Z",
+      updatedAt: "2026-01-02T12:00:01.000Z",
+    });
+    renderEditor({ isFavorite: false, isPinned: false });
+
+    await userEvent.click(screen.getByLabelText("Add to favorites"));
+
+    expect(mockedUpdateNoteRequest).toHaveBeenCalledWith("note-1", { isFavorite: true });
+  });
+
+  it("fires onToggleFieldOptimistic synchronously, before the request resolves", async () => {
+    let resolveRequest: (note: Awaited<ReturnType<typeof updateNoteRequest>>) => void = () => {};
+    mockedUpdateNoteRequest.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve;
+      }),
+    );
+    const onToggleFieldOptimistic = vi.fn();
+    renderEditor({ isPinned: false, onToggleFieldOptimistic });
+
+    await userEvent.click(screen.getByLabelText("Pin note"));
+
+    // Fired even though the mocked request hasn't resolved yet.
+    expect(onToggleFieldOptimistic).toHaveBeenCalledWith("isPinned", true);
+    expect(mockedUpdateNoteRequest).toHaveBeenCalledTimes(1);
+
+    resolveRequest({
+      id: "note-1",
+      title: "My Note",
+      content: "hello",
+      tags: TAGS,
+      isFavorite: false,
+      isPinned: true,
+      pinnedAt: new Date().toISOString(),
+      createdAt: "2026-01-01T10:00:00.000Z",
+      updatedAt: "2026-01-02T12:00:01.000Z",
+    });
+  });
+
+  it("fires onToggleFieldError with the reverted value when the request fails", async () => {
+    mockedUpdateNoteRequest.mockRejectedValue(new ApiError(500, "Server exploded"));
+    vi.spyOn(toast, "error").mockImplementation(() => "toast-id");
+    const onToggleFieldError = vi.fn();
+    renderEditor({ isPinned: false, onToggleFieldError });
+
+    await userEvent.click(screen.getByLabelText("Pin note"));
+
+    await waitFor(() => expect(onToggleFieldError).toHaveBeenCalledWith("isPinned", false));
+  });
+
+  it("reflects pinned/favorite state via aria-pressed and label", () => {
+    renderEditor({ isFavorite: true, isPinned: true });
+    expect(screen.getByLabelText("Remove from favorites")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Unpin note")).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows the created/updated timestamps", () => {

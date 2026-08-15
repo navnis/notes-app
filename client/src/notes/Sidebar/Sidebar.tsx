@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { BookOpen, FileText, Plus } from "lucide-react";
-import type { Tag as TagData } from "@notes/shared";
+import { BookOpen, FileText, Pin, Plus, Star } from "lucide-react";
+import type { NoteView, Tag as TagData } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Button, Tag } from "@/components";
 import { LogoutButton } from "@/auth";
@@ -10,9 +10,14 @@ export interface SidebarProps {
   /** Defaults to "Notes" — pass your own app name/branding. */
   appName?: string;
   allNotesCount: number;
+  favoritesCount: number;
+  pinnedCount: number;
   tags: TagData[];
   selectedTagId?: string | null;
   onTagSelect?: (id: string | null) => void;
+  /** null/undefined means "All Notes" (no view filter) — combinable with a tag/search filter. */
+  activeView?: NoteView | null;
+  onViewSelect?: (view: NoteView | null) => void;
   onNewNote: () => void;
   isCreatingNote?: boolean;
   className?: string;
@@ -21,9 +26,13 @@ export interface SidebarProps {
 export const Sidebar = memo(function Sidebar({
   appName = "Notes",
   allNotesCount,
+  favoritesCount,
+  pinnedCount,
   tags,
   selectedTagId,
   onTagSelect,
+  activeView,
+  onViewSelect,
   onNewNote,
   isCreatingNote,
   className,
@@ -31,7 +40,7 @@ export const Sidebar = memo(function Sidebar({
   return (
     <aside
       className={cn(
-        "flex w-full flex-col gap-6 rounded-lg bg-card p-4 shadow-sm sm:h-full sm:w-72",
+        "flex w-full flex-col gap-6 rounded-lg bg-card p-4 shadow-sm notes:h-full notes:w-72",
         className,
       )}
     >
@@ -60,7 +69,27 @@ export const Sidebar = memo(function Sidebar({
         <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Views
         </p>
-        <NavRow icon={<FileText className="size-4" />} label="All Notes" count={allNotesCount} active />
+        <NavRow
+          icon={<FileText className="size-4" />}
+          label="All Notes"
+          count={allNotesCount}
+          active={!activeView}
+          onClick={() => onViewSelect?.(null)}
+        />
+        <NavRow
+          icon={<Star className="size-4" />}
+          label="Favorites"
+          count={favoritesCount}
+          active={activeView === "favorites"}
+          onClick={() => onViewSelect?.(activeView === "favorites" ? null : "favorites")}
+        />
+        <NavRow
+          icon={<Pin className="size-4" />}
+          label="Pinned"
+          count={pinnedCount}
+          active={activeView === "pinned"}
+          onClick={() => onViewSelect?.(activeView === "pinned" ? null : "pinned")}
+        />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2">

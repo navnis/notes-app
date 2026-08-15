@@ -63,4 +63,28 @@ describe("parseListNotesQuery", () => {
   it("ignores a blank tag param", () => {
     expect(parseListNotesQuery(USER_ID, { tag: "  " }).filter).not.toHaveProperty("tags");
   });
+
+  it("filters by isFavorite when view=favorites", () => {
+    const result = parseListNotesQuery(USER_ID, { view: "favorites" });
+    expect(result.filter.isFavorite).toBe(true);
+    expect(result.filter).not.toHaveProperty("isPinned");
+  });
+
+  it("filters by isPinned when view=pinned", () => {
+    const result = parseListNotesQuery(USER_ID, { view: "pinned" });
+    expect(result.filter.isPinned).toBe(true);
+    expect(result.filter).not.toHaveProperty("isFavorite");
+  });
+
+  it("ignores an unknown view value", () => {
+    const result = parseListNotesQuery(USER_ID, { view: "trash" });
+    expect(result.filter).not.toHaveProperty("isFavorite");
+    expect(result.filter).not.toHaveProperty("isPinned");
+  });
+
+  it("combines a view filter with a tag filter", () => {
+    const result = parseListNotesQuery(USER_ID, { view: "pinned", tag: "frontend" });
+    expect(result.filter.isPinned).toBe(true);
+    expect(result.filter.tags).toBe("frontend");
+  });
 });

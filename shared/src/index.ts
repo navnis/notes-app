@@ -3,6 +3,10 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
+  isFavorite: boolean;
+  isPinned: boolean;
+  /** When this note was last pinned; null if never pinned or currently unpinned. */
+  pinnedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,13 +21,19 @@ export interface UpdateNoteInput {
   title?: string;
   content?: string;
   tags?: string[];
+  isFavorite?: boolean;
+  isPinned?: boolean;
 }
 
 export type NoteSortField = "updatedAt" | "createdAt" | "title";
 
+/** "favorites"/"pinned" filter to just that subset; omitted means no filter on either. */
+export type NoteView = "favorites" | "pinned";
+
 export interface ListNotesParams {
   search?: string;
   tag?: string;
+  view?: NoteView;
   sort?: NoteSortField;
   page?: number;
   limit?: number;
@@ -35,6 +45,10 @@ export interface ListNotesResponse {
   limit: number;
   total: number;
   hasMore: boolean;
+  /** Always scoped to just the user, not the active search/tag/view filter — for sidebar counts. */
+  allNotesCount: number;
+  favoritesCount: number;
+  pinnedCount: number;
 }
 
 export interface ApiResponse<T> {

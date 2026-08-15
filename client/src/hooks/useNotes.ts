@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
-import type { NoteSortField, UpdateNoteInput } from "@notes/shared";
+import type { NoteSortField, NoteView, UpdateNoteInput } from "@notes/shared";
 import { listNotesRequest, createNoteRequest, updateNoteRequest, deleteNoteRequest } from "@/api/notes";
 
 const NOTES_PAGE_SIZE = 10;
@@ -7,6 +7,7 @@ const NOTES_PAGE_SIZE = 10;
 export interface NotesFilters {
   search?: string;
   tag?: string | null;
+  view?: NoteView | null;
   sort?: NoteSortField;
 }
 
@@ -21,6 +22,7 @@ export function useNotes(filters: NotesFilters = {}) {
       listNotesRequest({
         search: filters.search,
         tag: filters.tag ?? undefined,
+        view: filters.view ?? undefined,
         sort: filters.sort,
         page: pageParam,
         limit: NOTES_PAGE_SIZE,

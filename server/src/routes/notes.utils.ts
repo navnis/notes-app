@@ -1,4 +1,5 @@
 const SORTABLE_FIELDS = new Set(["updatedAt", "createdAt", "title"]);
+const VIEW_FIELDS = { favorites: "isFavorite", pinned: "isPinned" } as const;
 const DEFAULT_PAGE_SIZE = 10;
 
 export interface ParsedListQuery {
@@ -11,7 +12,7 @@ export interface ParsedListQuery {
 // Pure parsing of GET /api/notes' query params, split out so it's unit testable without a live DB.
 export function parseListNotesQuery(
   userId: string,
-  query: { search?: unknown; tag?: unknown; sort?: unknown; page?: unknown; limit?: unknown },
+  query: { search?: unknown; tag?: unknown; view?: unknown; sort?: unknown; page?: unknown; limit?: unknown },
 ): ParsedListQuery {
   // Absent means "use the default"; an explicit 0/-5 should just clamp to 1, not fall back to it.
   const parsedPage = query.page === undefined ? 1 : Number(query.page);
@@ -33,6 +34,9 @@ export function parseListNotesQuery(
   }
   if (typeof query.tag === "string" && query.tag.trim()) {
     filter.tags = query.tag.trim();
+  }
+  if (typeof query.view === "string" && query.view in VIEW_FIELDS) {
+    filter[VIEW_FIELDS[query.view as keyof typeof VIEW_FIELDS]] = true;
   }
 
   return { page, limit, sortField, filter };

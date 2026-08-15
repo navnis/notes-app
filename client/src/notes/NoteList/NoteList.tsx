@@ -9,6 +9,8 @@ export interface NoteListProps {
   notes: NoteListItem[];
   /** Total matching the current filters, from the server — not just notes.length (only the loaded page). */
   totalCount: number;
+  /** Defaults to "All Notes" — pass the active view's label (e.g. "Favorites", "Pinned") when one is selected. */
+  heading?: string;
   /** True while the current filters' results are (re)loading — scoped to just this column, not the whole page. */
   isLoading?: boolean;
   selectedNoteId?: string | null;
@@ -28,6 +30,7 @@ export interface NoteListProps {
 export const NoteList = memo(function NoteList({
   notes,
   totalCount,
+  heading = "All Notes",
   isLoading,
   selectedNoteId,
   onSelectNote,
@@ -89,7 +92,7 @@ export const NoteList = memo(function NoteList({
   };
 
   return (
-    <div className={cn("flex h-full min-h-0 min-w-0 flex-col gap-4 p-4", className)}>
+    <div className={cn("flex min-h-0 min-w-0 flex-col gap-4 p-4 notes:h-full", className)}>
       <Input
         ref={searchRef}
         icon={<Search className="size-4" />}
@@ -102,7 +105,7 @@ export const NoteList = memo(function NoteList({
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
-          All Notes
+          {heading}
           <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-bold text-accent-foreground">
             {totalCount}
           </span>
@@ -148,6 +151,8 @@ export const NoteList = memo(function NoteList({
               title={note.title}
               preview={note.preview}
               tags={note.tags}
+              isFavorite={note.isFavorite}
+              isPinned={note.isPinned}
               updatedAt={note.updatedAt}
               selected={note.id === selectedNoteId}
               onClick={onSelectNote}

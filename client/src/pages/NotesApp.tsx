@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import type { NoteSortField } from "@notes/shared";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import type { ListNotesResponse, Note, NoteSortField, NoteView } from "@notes/shared";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
 import { toast } from "@/components";
-import { useNotes, useCreateNote, useDeleteNote } from "@/hooks/useNotes";
+import { useNotes, useCreateNote, useDeleteNote, type NotesFilters } from "@/hooks/useNotes";
 import { useTags, tagsQueryKey } from "@/hooks/useTags";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError } from "@/lib/api";
-import { toPreviewText, toPossessiveAppName } from "./NotesApp.utils";
+import { toPreviewText, toPossessiveAppName, compareNotesForSort } from "./NotesApp.utils";
 
 interface NoteItem {
   id: string;
@@ -16,6 +16,8 @@ interface NoteItem {
   preview?: string;
   content: string;
   tags: string[];
+  isFavorite: boolean;
+  isPinned: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +27,7 @@ interface NoteItem {
 export function NotesApp() {
   const [search, setSearch] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<NoteView | null>(null);
   const [sortBy, setSortBy] = useState<NoteSortField>("updatedAt");
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -32,8 +35,8 @@ export function NotesApp() {
   const [noteOverlay, setNoteOverlay] = useState<NoteItem | null>(null);
 
   const filters = useMemo(
-    () => ({ search, tag: selectedTagId, sort: sortBy }),
-    [search, selectedTagId, sortBy],
+    () => ({ search, tag: selectedTagId, view: activeView, sort: sortBy }),
+    [search, selectedTagId, activeView, sortBy],
   );
   const {
     data,
@@ -52,6 +55,9 @@ export function NotesApp() {
 
   const pages = useMemo(() => data?.pages ?? [], [data]);
   const totalCount = pages[0]?.total ?? 0;
+  const allNotesCount = pages[0]?.allNotesCount ?? 0;
+  const favoritesCount = pages[0]?.favoritesCount ?? 0;
+  const pinnedCount = pages[0]?.pinnedCount ?? 0;
   const notes: NoteItem[] = useMemo(
     () =>
       pages
@@ -96,10 +102,97 @@ export function NotesApp() {
     [],
   );
 
+  // Patches one note's fields across every cached notes query, then re-sorts each query's flattened
+  // notes by its own active sortField (pinned-first, mirroring the server) and re-slices back into pages —
+  // used for the optimistic pin/favorite toggle, its server-confirmed follow-up, and its revert-on-error.
+  // Iterates the query cache directly (rather than setQueriesData) since each cached query's own
+  // sortField — needed to sort correctly — only lives in that query's queryKey, not in the data itself.
+  const patchAndResortNote = useCallback(
+    (id: string, changes: Partial<Pick<Note, "isFavorite" | "isPinned" | "pinnedAt" | "updatedAt" | "tags">>) => {
+      const queries = queryClient.getQueryCache().findAll({ queryKey: ["notes"] });
+      for (const query of queries) {
+        const data = query.state.data as InfiniteData<ListNotesResponse> | undefined;
+        if (!data) continue;
+        const filters = (query.queryKey[1] ?? {}) as NotesFilters;
+        const sortField = filters.sort ?? "updatedAt";
+        const flatNotes = data.pages
+          .flatMap((page) => page.notes)
+          .map((note) => (note.id === id ? { ...note, ...changes } : note))
+          .sort(compareNotesForSort(sortField));
+
+        let cursor = 0;
+        queryClient.setQueryData<InfiniteData<ListNotesResponse>>(query.queryKey, {
+          ...data,
+          pages: data.pages.map((page) => {
+            const slice = flatNotes.slice(cursor, cursor + page.notes.length);
+            cursor += page.notes.length;
+            return { ...page, notes: slice };
+          }),
+        });
+      }
+    },
+    [queryClient],
+  );
+
   const handleNoteSaved = useCallback(
-    (saved: { updatedAt: string; tags: string[] }) =>
-      setNoteOverlay((prev) => (prev ? { ...prev, updatedAt: saved.updatedAt, tags: saved.tags } : prev)),
-    [],
+    (saved: {
+      id: string;
+      updatedAt: string;
+      tags: string[];
+      isFavorite: boolean;
+      isPinned: boolean;
+      pinnedAt: string | null;
+    }) => {
+      setNoteOverlay((prev) =>
+        prev?.id === saved.id
+          ? {
+              ...prev,
+              updatedAt: saved.updatedAt,
+              tags: saved.tags,
+              isFavorite: saved.isFavorite,
+              isPinned: saved.isPinned,
+            }
+          : prev,
+      );
+      // Patch every cached notes query too — not just the overlay — so isFavorite/isPinned
+      // stay correct once the overlay is torn down (e.g. after switching selection away and back).
+      patchAndResortNote(saved.id, {
+        updatedAt: saved.updatedAt,
+        tags: saved.tags,
+        isFavorite: saved.isFavorite,
+        isPinned: saved.isPinned,
+        pinnedAt: saved.pinnedAt,
+      });
+    },
+    [patchAndResortNote],
+  );
+
+  // Fired the instant a pin/favorite toggle is clicked (before the request resolves) — applies the
+  // change and reorders the list right away; pinnedAt is a client-side stand-in until the real
+  // server response lands via handleNoteSaved above, which overwrites it with the authoritative value.
+  const handleToggleOptimistic = useCallback(
+    (id: string, field: "isFavorite" | "isPinned", nextValue: boolean) => {
+      if (field === "isPinned") {
+        patchAndResortNote(id, { isPinned: nextValue, pinnedAt: nextValue ? new Date().toISOString() : null });
+      } else {
+        patchAndResortNote(id, { isFavorite: nextValue });
+      }
+    },
+    [patchAndResortNote],
+  );
+
+  const handleToggleError = useCallback(
+    (id: string, field: "isFavorite" | "isPinned", revertedValue: boolean) => {
+      if (field === "isPinned") {
+        patchAndResortNote(id, {
+          isPinned: revertedValue,
+          pinnedAt: revertedValue ? new Date().toISOString() : null,
+        });
+      } else {
+        patchAndResortNote(id, { isFavorite: revertedValue });
+      }
+    },
+    [patchAndResortNote],
   );
 
   const handleNewNote = useCallback(async () => {
@@ -152,20 +245,25 @@ export function NotesApp() {
   }, [openNoteId, handleDeleteNote]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:flex-row">
+    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-4 notes:h-full notes:flex-row notes:overflow-visible">
       <Sidebar
         appName={appName}
-        allNotesCount={totalCount}
+        allNotesCount={allNotesCount}
+        favoritesCount={favoritesCount}
+        pinnedCount={pinnedCount}
         tags={tags}
         selectedTagId={selectedTagId}
         onTagSelect={setSelectedTagId}
+        activeView={activeView}
+        onViewSelect={setActiveView}
         onNewNote={handleNewNote}
         isCreatingNote={createNote.isPending}
       />
       <NoteList
-        className="flex-[2]"
+        className="notes:flex-[2]"
         notes={notes}
         totalCount={totalCount}
+        heading={activeView === "favorites" ? "Favorites" : activeView === "pinned" ? "Pinned" : "All Notes"}
         isLoading={isLoading}
         selectedNoteId={selectedNoteId}
         onSelectNote={setSelectedNoteId}
@@ -180,7 +278,7 @@ export function NotesApp() {
       />
       {selectedNote && (
         <NoteEditor
-          className="flex-[3]"
+          className="notes:flex-[3]"
           noteId={selectedNote.id}
           emoji={selectedNote.emoji}
           title={selectedNote.title}
@@ -191,6 +289,14 @@ export function NotesApp() {
           onPreviewChange={setPreview}
           onSaved={handleNoteSaved}
           tags={selectedNote.tags}
+          isFavorite={selectedNote.isFavorite}
+          isPinned={selectedNote.isPinned}
+          onToggleFieldOptimistic={(field, nextValue) =>
+            handleToggleOptimistic(selectedNote.id, field, nextValue)
+          }
+          onToggleFieldError={(field, revertedValue) =>
+            handleToggleError(selectedNote.id, field, revertedValue)
+          }
           onDelete={handleDeleteSelectedNote}
           createdAt={selectedNote.createdAt}
           updatedAt={selectedNote.updatedAt}

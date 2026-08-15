@@ -36,6 +36,8 @@ export const updateNoteSchema = z.object({
   title: z.string().trim().min(1, "Title is required.").optional(),
   content: z.string().optional(),
   tags: tagsSchema,
+  isFavorite: z.boolean().optional(),
+  isPinned: z.boolean().optional(),
 });
 
 export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
