@@ -7,6 +7,8 @@ export interface ModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
+  /** Rendered before the title, e.g. a lucide icon. */
+  titleIcon?: ReactNode;
   description?: string;
   /** Custom body content. Takes over the default Cancel/Confirm footer entirely when given. */
   children?: ReactNode;
@@ -24,6 +26,7 @@ export function Modal({
   open,
   onClose,
   title,
+  titleIcon,
   description,
   children,
   className,
@@ -90,7 +93,8 @@ export function Modal({
       )}
     >
       <div className="flex items-start justify-between gap-4">
-        <h2 id={titleId} className="text-lg font-semibold">
+        <h2 id={titleId} className="flex items-center gap-2 text-lg font-semibold">
+          {titleIcon}
           {title}
         </h2>
         <button

@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { createNoteRequest, listNotesRequest, updateNoteRequest } from "@/api/notes";
 import { listTagsRequest } from "@/api/tags";
 import { NotesApp } from "./NotesApp";
@@ -11,7 +11,7 @@ vi.mock("@/api/notes", () => ({
   listNotesRequest: vi.fn(),
   createNoteRequest: vi.fn(),
   updateNoteRequest: vi.fn(),
-  deleteNoteRequest: vi.fn(),
+  deleteNoteRequest: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/api/tags", () => ({
   listTagsRequest: vi.fn(),
@@ -36,6 +36,12 @@ function renderNotesApp() {
 }
 
 describe("NotesApp", () => {
+  // Tests that simulate going offline dispatch a real "offline" window event — reset it
+  // back to online after every test so that state doesn't leak into the next one.
+  afterEach(() => {
+    window.dispatchEvent(new Event("online"));
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockedListNotes.mockResolvedValue({
@@ -80,6 +86,73 @@ describe("NotesApp", () => {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "n", metaKey: true }));
 
     expect(mockedCreateNote).not.toHaveBeenCalled();
+  });
+
+  it("toggles preview mode on Ctrl+P when a note is open", async () => {
+    mockedListNotes.mockResolvedValue({
+      notes: [
+        {
+          id: "note-1",
+          title: "First",
+          content: "hello",
+          tags: [],
+          isFavorite: false,
+          isPinned: false,
+          pinnedAt: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      page: 1,
+      limit: 10,
+      total: 1,
+      hasMore: false,
+      allNotesCount: 1,
+      favoritesCount: 0,
+      pinnedCount: 0,
+    });
+    renderNotesApp();
+    await userEvent.click(await screen.findByRole("button", { name: /First/ }));
+    await screen.findByLabelText("Note content");
+
+    // Ctrl+P swaps the editable textarea for the read-only markdown preview.
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "p", ctrlKey: true }));
+    await waitFor(() => expect(screen.queryByLabelText("Note content")).not.toBeInTheDocument());
+  });
+
+  it("disables the editor when the browser goes offline, and re-enables it when back online", async () => {
+    mockedListNotes.mockResolvedValue({
+      notes: [
+        {
+          id: "note-1",
+          title: "First",
+          content: "hello",
+          tags: [],
+          isFavorite: false,
+          isPinned: false,
+          pinnedAt: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      page: 1,
+      limit: 10,
+      total: 1,
+      hasMore: false,
+      allNotesCount: 1,
+      favoritesCount: 0,
+      pinnedCount: 0,
+    });
+    renderNotesApp();
+    await userEvent.click(await screen.findByRole("button", { name: /First/ }));
+    await screen.findByLabelText("Note content");
+    expect(screen.getByLabelText("Note content")).not.toBeDisabled();
+
+    act(() => window.dispatchEvent(new Event("offline")));
+    expect(screen.getByLabelText("Note content")).toBeDisabled();
+
+    act(() => window.dispatchEvent(new Event("online")));
+    expect(screen.getByLabelText("Note content")).not.toBeDisabled();
   });
 
   it("shows the empty state when there are no notes", async () => {

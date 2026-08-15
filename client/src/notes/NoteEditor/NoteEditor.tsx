@@ -46,6 +46,8 @@ export interface NoteEditorProps {
   onToggleFieldError?: (field: "isFavorite" | "isPinned", revertedValue: boolean) => void;
   createdAt: string | Date;
   updatedAt: string | Date;
+  /** Disables all editing controls (title, tags, content, pin/favorite/delete) — e.g. while offline. */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -67,6 +69,7 @@ export const NoteEditor = memo(function NoteEditor({
   onToggleFieldError,
   createdAt,
   updatedAt,
+  disabled,
   className,
 }: NoteEditorProps) {
   const [newTag, setNewTag] = useState("");
@@ -237,6 +240,7 @@ export const NoteEditor = memo(function NoteEditor({
             aria-label={isPinned ? "Unpin note" : "Pin note"}
             aria-pressed={isPinned}
             onClick={() => toggleField("isPinned", !isPinned)}
+            disabled={disabled}
             className={isPinned ? "text-primary" : undefined}
           >
             <Pin className="size-4" fill={isPinned ? "currentColor" : "none"} />
@@ -247,6 +251,7 @@ export const NoteEditor = memo(function NoteEditor({
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             aria-pressed={isFavorite}
             onClick={() => toggleField("isFavorite", !isFavorite)}
+            disabled={disabled}
             className={isFavorite ? "text-amber-500" : undefined}
           >
             <Star className="size-4" fill={isFavorite ? "currentColor" : "none"} />
@@ -256,6 +261,7 @@ export const NoteEditor = memo(function NoteEditor({
             size="icon"
             aria-label="Delete note"
             onClick={() => setConfirmingDelete(true)}
+            disabled={disabled}
           >
             <Trash2 className="size-4" />
           </Button>
@@ -274,7 +280,8 @@ export const NoteEditor = memo(function NoteEditor({
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Untitled Note"
           aria-label="Note title"
-          className="w-full flex-1 appearance-none bg-transparent text-2xl font-bold text-foreground placeholder:text-muted-foreground focus-visible:outline-none"
+          disabled={disabled}
+          className="w-full flex-1 appearance-none bg-transparent text-2xl font-bold text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -282,7 +289,11 @@ export const NoteEditor = memo(function NoteEditor({
         <TagIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <div className="scrollbar-thin flex min-w-0 items-center gap-2 overflow-x-auto">
           {tags.map((tag) => (
-            <Tag key={tag} onRemove={() => handleRemoveTag(tag)} className="shrink-0">
+            <Tag
+              key={tag}
+              onRemove={disabled ? undefined : () => handleRemoveTag(tag)}
+              className="shrink-0"
+            >
               #{tag}
             </Tag>
           ))}
@@ -296,7 +307,8 @@ export const NoteEditor = memo(function NoteEditor({
           }}
           placeholder="+ Add tag (Press Enter)"
           aria-label="Add tag"
-          className="w-40 shrink-0 appearance-none rounded-full border border-primary/30 bg-transparent px-2.5 py-1 text-xs text-muted-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          disabled={disabled}
+          className="w-40 shrink-0 appearance-none rounded-full border border-primary/30 bg-transparent px-2.5 py-1 text-xs text-muted-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -305,6 +317,7 @@ export const NoteEditor = memo(function NoteEditor({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         preview={preview}
+        disabled={disabled}
         className="flex-1"
       />
 

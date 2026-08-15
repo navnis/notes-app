@@ -358,4 +358,15 @@ describe("NoteEditor", () => {
     await userEvent.type(screen.getByLabelText("Note content"), "hi");
     expect(screen.getByLabelText("Note content")).toHaveValue("hi");
   });
+
+  it("disables title, tags, content and the pin/favorite/delete buttons when disabled", () => {
+    renderEditor({ disabled: true, tags: TAGS });
+    expect(screen.getByLabelText("Note title")).toBeDisabled();
+    expect(screen.getByLabelText("Add tag")).toBeDisabled();
+    expect(screen.getByLabelText("Note content")).toBeDisabled();
+    expect(screen.getByLabelText("Pin note")).toBeDisabled();
+    expect(screen.getByLabelText("Add to favorites")).toBeDisabled();
+    expect(screen.getByLabelText("Delete note")).toBeDisabled();
+    expect(screen.queryByLabelText(/Remove frontend/)).not.toBeInTheDocument();
+  });
 });

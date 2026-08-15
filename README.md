@@ -2,7 +2,7 @@
 
 **Live:** [https://notes.techiepeppers.com](https://notes.techiepeppers.com)
 
-A notes app — create, edit, tag, search, favorite, pin, and organize notes, with your own account so your notes are yours. React/TypeScript frontend, Express/TypeScript backend, MongoDB for storage.
+A notes app — create, edit, tag, search, favorite, pin, and organize notes, with your own account so your notes are yours. React/TypeScript frontend, Express/TypeScript backend, MongoDB for storage. Also shows an offline-detected banner and disables editing while offline, and supports a handful of keyboard shortcuts (Ctrl+N, /, Ctrl+P) with a shortcuts modal.
 
 ## Running it locally
 
@@ -59,8 +59,6 @@ Vitest on both sides. Client: React Testing Library, a test file per component/h
 
 ## What's left
 
-- Keyboard shortcuts are partial.
-- No offline detection.
 - No forgot-password flow.
 - No conflict handling across devices/tabs.
 - Trash/soft-delete, export, version history, dark mode, and E2E tests are still open.

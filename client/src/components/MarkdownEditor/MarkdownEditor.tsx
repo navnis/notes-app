@@ -29,7 +29,7 @@ export interface MarkdownEditorProps extends TextareaHTMLAttributes<HTMLTextArea
 
 export const MarkdownEditor = memo(
   forwardRef<HTMLTextAreaElement, MarkdownEditorProps>(
-    ({ className, label, error, id, value, rows = 8, preview, ...props }, ref) => {
+    ({ className, label, error, id, value, rows = 8, preview, disabled, ...props }, ref) => {
       const generatedId = useId();
       const fieldId = id ?? generatedId;
       const internalRef = useRef<HTMLTextAreaElement | null>(null);
@@ -111,7 +111,12 @@ export const MarkdownEditor = memo(
                       type="button"
                       aria-label={item.ariaLabel}
                       onClick={() => runCommand(item.command)}
-                      className={cn(TOOLBAR_BUTTON_CLASSNAME, item.className)}
+                      disabled={disabled}
+                      className={cn(
+                        TOOLBAR_BUTTON_CLASSNAME,
+                        item.className,
+                        "disabled:pointer-events-none disabled:opacity-50",
+                      )}
                     >
                       {item.label}
                     </button>
@@ -126,6 +131,7 @@ export const MarkdownEditor = memo(
                 id={fieldId}
                 value={value}
                 rows={rows}
+                disabled={disabled}
                 className="w-full flex-1 min-h-0 resize-none overflow-y-auto bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 aria-invalid={error ? true : undefined}
                 {...props}

@@ -1,10 +1,11 @@
-import { memo } from "react";
-import { BookOpen, FileText, Pin, Plus, Star } from "lucide-react";
+import { memo, useState } from "react";
+import { BookOpen, FileText, Keyboard, Pin, Plus, Star } from "lucide-react";
 import type { NoteView, Tag as TagData } from "@notes/shared";
 import { cn } from "@/lib/utils";
 import { Button, Tag } from "@/components";
 import { LogoutButton } from "@/auth";
 import { NavRow } from "./NavRow";
+import { ShortcutsModal } from "../ShortcutsModal";
 
 export interface SidebarProps {
   /** Defaults to "Notes" — pass your own app name/branding. */
@@ -37,6 +38,8 @@ export const Sidebar = memo(function Sidebar({
   isCreatingNote,
   className,
 }: SidebarProps) {
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
   return (
     <aside
       className={cn(
@@ -114,9 +117,20 @@ export const Sidebar = memo(function Sidebar({
         )}
       </div>
 
+      <button
+        type="button"
+        onClick={() => setShortcutsOpen(true)}
+        className="flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-accent-foreground cursor-pointer hover:bg-accent/80"
+      >
+        <Keyboard className="size-4" />
+        Shortcuts
+      </button>
+
       <div className="border-t border-border pt-3">
         <LogoutButton />
       </div>
+
+      <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </aside>
   );
 });

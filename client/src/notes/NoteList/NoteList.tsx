@@ -1,9 +1,9 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, Search, SearchX } from "lucide-react";
-import { EmptyState, Input, Loading, NoteCard, Select } from "@/components";
+import { EmptyState, Input, NoteCard, NoteCardSkeleton, Select } from "@/components";
 import { cn } from "@/lib/utils";
 import type { NoteListItem } from "./types";
-import { SEARCH_DEBOUNCE_MS, SORT_OPTIONS } from "./NoteList.constants";
+import { SEARCH_DEBOUNCE_MS, SKELETON_COUNT, SORT_OPTIONS } from "./NoteList.constants";
 
 export interface NoteListProps {
   notes: NoteListItem[];
@@ -120,8 +120,10 @@ export const NoteList = memo(function NoteList({
       </div>
 
       {isLoading ? (
-        <div className="flex flex-1 items-center justify-center">
-          <Loading label="Loading notes..." />
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto">
+          {Array.from({ length: SKELETON_COUNT }, (_, index) => (
+            <NoteCardSkeleton key={index} />
+          ))}
         </div>
       ) : notes.length === 0 ? (
         totalCount === 0 && !search ? (

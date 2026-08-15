@@ -9,3 +9,6 @@ export const SORT_OPTIONS: SelectOption[] = [
 // How long to wait after the last keystroke before the search actually
 // hits the server — matches NoteEditor's autosave debounce for consistency.
 export const SEARCH_DEBOUNCE_MS = 800;
+
+// Number of skeleton cards shown while notes are loading.
+export const SKELETON_COUNT = 4;

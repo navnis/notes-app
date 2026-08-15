@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import type { ListNotesResponse, Note, NoteSortField, NoteView } from "@notes/shared";
 import { Sidebar, NoteList, NoteEditor } from "@/notes";
-import { toast } from "@/components";
+import { OfflineBanner, toast } from "@/components";
 import { useNotes, useCreateNote, useDeleteNote, type NotesFilters } from "@/hooks/useNotes";
 import { useTags, tagsQueryKey } from "@/hooks/useTags";
 import { useAuth } from "@/hooks/useAuth";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { ApiError } from "@/lib/api";
 import { toPreviewText, toPossessiveAppName, compareNotesForSort } from "./NotesApp.utils";
 
@@ -31,6 +32,7 @@ export function NotesApp() {
   const [sortBy, setSortBy] = useState<NoteSortField>("updatedAt");
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const isOnline = useOnlineStatus();
   // Local overlay for the open note so a background page refetch can't clobber unsaved edits.
   const [noteOverlay, setNoteOverlay] = useState<NoteItem | null>(null);
 
@@ -244,64 +246,84 @@ export function NotesApp() {
     return openNoteId ? handleDeleteNote(openNoteId) : undefined;
   }, [openNoteId, handleDeleteNote]);
 
+  // Read via ref so this listener (like the Ctrl+N one above) is only ever attached once.
+  // No-op while offline — editing itself is disabled then.
+  const isOnlineRef = useRef(isOnline);
+  isOnlineRef.current = isOnline;
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!event.ctrlKey || !isOnlineRef.current) return;
+      if (event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        setPreview((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
-    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-4 notes:h-full notes:flex-row notes:overflow-visible">
-      <Sidebar
-        appName={appName}
-        allNotesCount={allNotesCount}
-        favoritesCount={favoritesCount}
-        pinnedCount={pinnedCount}
-        tags={tags}
-        selectedTagId={selectedTagId}
-        onTagSelect={setSelectedTagId}
-        activeView={activeView}
-        onViewSelect={setActiveView}
-        onNewNote={handleNewNote}
-        isCreatingNote={createNote.isPending}
-      />
-      <NoteList
-        className="notes:flex-[2]"
-        notes={notes}
-        totalCount={totalCount}
-        heading={activeView === "favorites" ? "Favorites" : activeView === "pinned" ? "Pinned" : "All Notes"}
-        isLoading={isLoading}
-        selectedNoteId={selectedNoteId}
-        onSelectNote={setSelectedNoteId}
-        onCreateNote={handleNewNote}
-        search={search}
-        onSearchChange={setSearch}
-        sortBy={sortBy}
-        onSortByChange={handleSortByChange}
-        hasMore={hasNextPage}
-        isFetchingMore={isFetchingNextPage}
-        onLoadMore={fetchNextPage}
-      />
-      {selectedNote && (
-        <NoteEditor
-          className="notes:flex-[3]"
-          noteId={selectedNote.id}
-          emoji={selectedNote.emoji}
-          title={selectedNote.title}
-          onTitleChange={handleTitleChange}
-          value={selectedNote.content}
-          onChange={handleContentChange}
-          preview={preview}
-          onPreviewChange={setPreview}
-          onSaved={handleNoteSaved}
-          tags={selectedNote.tags}
-          isFavorite={selectedNote.isFavorite}
-          isPinned={selectedNote.isPinned}
-          onToggleFieldOptimistic={(field, nextValue) =>
-            handleToggleOptimistic(selectedNote.id, field, nextValue)
-          }
-          onToggleFieldError={(field, revertedValue) =>
-            handleToggleError(selectedNote.id, field, revertedValue)
-          }
-          onDelete={handleDeleteSelectedNote}
-          createdAt={selectedNote.createdAt}
-          updatedAt={selectedNote.updatedAt}
+    <div className="flex min-h-0 flex-col notes:h-full">
+      <OfflineBanner className="m-4 mb-0" />
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 notes:flex-row notes:overflow-visible">
+        <Sidebar
+          appName={appName}
+          allNotesCount={allNotesCount}
+          favoritesCount={favoritesCount}
+          pinnedCount={pinnedCount}
+          tags={tags}
+          selectedTagId={selectedTagId}
+          onTagSelect={setSelectedTagId}
+          activeView={activeView}
+          onViewSelect={setActiveView}
+          onNewNote={handleNewNote}
+          isCreatingNote={createNote.isPending}
         />
-      )}
+        <NoteList
+          className="notes:flex-[2]"
+          notes={notes}
+          totalCount={totalCount}
+          heading={activeView === "favorites" ? "Favorites" : activeView === "pinned" ? "Pinned" : "All Notes"}
+          isLoading={isLoading}
+          selectedNoteId={selectedNoteId}
+          onSelectNote={setSelectedNoteId}
+          onCreateNote={handleNewNote}
+          search={search}
+          onSearchChange={setSearch}
+          sortBy={sortBy}
+          onSortByChange={handleSortByChange}
+          hasMore={hasNextPage}
+          isFetchingMore={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
+        />
+        {selectedNote && (
+          <NoteEditor
+            className="notes:flex-[3]"
+            noteId={selectedNote.id}
+            emoji={selectedNote.emoji}
+            title={selectedNote.title}
+            onTitleChange={handleTitleChange}
+            value={selectedNote.content}
+            onChange={handleContentChange}
+            preview={preview}
+            onPreviewChange={setPreview}
+            onSaved={handleNoteSaved}
+            tags={selectedNote.tags}
+            isFavorite={selectedNote.isFavorite}
+            isPinned={selectedNote.isPinned}
+            onToggleFieldOptimistic={(field, nextValue) =>
+              handleToggleOptimistic(selectedNote.id, field, nextValue)
+            }
+            onToggleFieldError={(field, revertedValue) =>
+              handleToggleError(selectedNote.id, field, revertedValue)
+            }
+            onDelete={handleDeleteSelectedNote}
+            disabled={!isOnline}
+            createdAt={selectedNote.createdAt}
+            updatedAt={selectedNote.updatedAt}
+          />
+        )}
+      </div>
     </div>
   );
 }

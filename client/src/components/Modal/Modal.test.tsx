@@ -23,6 +23,15 @@ describe("Modal", () => {
     expect(screen.getByText("This can't be undone.")).toBeVisible();
   });
 
+  it("renders a titleIcon before the title when given", () => {
+    render(
+      <Modal open onClose={vi.fn()} title="Delete note?" titleIcon={<span data-testid="icon" />}>
+        content
+      </Modal>,
+    );
+    expect(screen.getByTestId("icon")).toBeInTheDocument();
+  });
+
   it("calls onClose when the close button is clicked", async () => {
     const onClose = vi.fn();
     render(

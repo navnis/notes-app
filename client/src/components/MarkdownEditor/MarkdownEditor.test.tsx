@@ -73,4 +73,11 @@ describe("MarkdownEditor", () => {
     await userEvent.click(screen.getByRole("button", { name: "Bulleted list" }));
     expect(textarea).toHaveValue("- item\n- ");
   });
+
+  it("disables the textarea and every toolbar button when disabled", () => {
+    render(<MarkdownEditor aria-label="Note" value="hello" onChange={() => {}} disabled />);
+    expect(screen.getByLabelText("Note")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Bold" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Italic" })).toBeDisabled();
+  });
 });

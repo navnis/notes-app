@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
@@ -53,7 +53,8 @@ describe("Sidebar", () => {
   // only Ctrl+N is wired up, so the badge must say that, not ⌘N.
   it("shows Ctrl+N as the New Note shortcut, not ⌘N", () => {
     renderSidebar();
-    expect(screen.getByText("Ctrl+N")).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: /new note/i });
+    expect(within(button).getByText("Ctrl+N")).toBeInTheDocument();
   });
 
   it("selects a tag on click and deselects it on a second click", async () => {
@@ -78,7 +79,7 @@ describe("Sidebar", () => {
     const button = screen.getByRole("button", { name: /new note/i });
     expect(button).toHaveAttribute("aria-busy", "true");
     expect(button).toBeDisabled();
-    expect(screen.queryByText("Ctrl+N")).not.toBeInTheDocument();
+    expect(within(button).queryByText("Ctrl+N")).not.toBeInTheDocument();
   });
 
   it("shows Favorites and Pinned rows with their counts, All Notes active by default", () => {
@@ -105,5 +106,12 @@ describe("Sidebar", () => {
     renderSidebar({ onViewSelect, activeView: "pinned" });
     await userEvent.click(screen.getByRole("button", { name: /All Notes/ }));
     expect(onViewSelect).toHaveBeenCalledWith(null);
+  });
+
+  it("opens the shortcuts modal from the Shortcuts button", async () => {
+    renderSidebar();
+    expect(screen.queryByText("Keyboard Shortcuts")).not.toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: /shortcuts/i }));
+    expect(screen.getByText("Keyboard Shortcuts")).toBeVisible();
   });
 });

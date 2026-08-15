@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { NoteList } from "./NoteList";
 import type { NoteListProps } from "./NoteList";
 import type { NoteListItem } from "./types";
-import { SEARCH_DEBOUNCE_MS } from "./NoteList.constants";
+import { SEARCH_DEBOUNCE_MS, SKELETON_COUNT } from "./NoteList.constants";
 
 const NOTES: NoteListItem[] = [
   {
@@ -110,5 +110,11 @@ describe("NoteList", () => {
   it("shows a loading spinner at the bottom while fetching the next page", () => {
     renderList({ hasMore: true, isFetchingMore: true, onLoadMore: vi.fn() });
     expect(screen.getByLabelText("Loading more notes")).toBeInTheDocument();
+  });
+
+  it("shows skeleton placeholders instead of notes while loading", () => {
+    renderList({ isLoading: true });
+    expect(screen.getAllByRole("status", { name: "Loading note" })).toHaveLength(SKELETON_COUNT);
+    expect(screen.queryByText("Zebra Notes")).not.toBeInTheDocument();
   });
 });
