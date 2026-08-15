@@ -57,8 +57,16 @@ Search, tag filtering, sorting, and pagination happen server-side. Autosave debo
 
 Vitest on both sides. Client: React Testing Library, a test file per component/hook/page. Server: pure logic only (validation, hashing, JWT, query parsing) — no route integration tests; routes were verified by hand with `curl`.
 
-## What's left
+## Bonus Attempted
 
-- No forgot-password flow.
-- No conflict handling across devices/tabs.
-- Trash/soft-delete, export, version history, dark mode, and E2E tests are still open.
+- ✅ Authentication with user-specific notes.
+- ✅ Dark mode.
+- ⬜ Multi-device sync / conflict handling.
+- ⬜ Soft delete with a trash + restore flow.
+- ⬜ Export notes as Markdown or JSON.
+- ⬜ Note version history.
+- ⬜ E2E tests (Playwright / Cypress).
+
+Also added, outside the bonus list: an offline-detected banner that pauses editing while offline (no local save/queue/sync yet), and a handful of keyboard shortcuts (Ctrl+N, /, Ctrl+P) with a shortcuts modal.
+
+
